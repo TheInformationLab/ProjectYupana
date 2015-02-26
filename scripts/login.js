@@ -5,6 +5,7 @@ var modulus = '';
 var exponent = '';
 var authenticity = '';
 var fullURL = '';
+var siteSelected = false;
 
 console.log("serverURL: "+serverURL);
 console.log("site: "+site);
@@ -99,7 +100,6 @@ function serURLSubmit(){
 		document.body.appendChild(userField);
 		document.body.appendChild(passField);
 		document.body.appendChild(loginBtn);
-		loginUser();
 	};
 	authXML.send(null);
 	console.log("serURLSubmit: complete");
@@ -123,13 +123,13 @@ function loginUser(){
 		RSA.setPublic(modulus, exponent);
 		var res =RSA.encrypt(password);
 		console.log(res);
-		
 		var data = new FormData();
 		data.append('crypted', res);
 		data.append('authenticity_token', authenticity);
-		if (site) {
-			data.append('site',site);
-			fullURL = serverURL +"/t/"+site;
+		console.log("Site Selected? " + siteSelected)
+		if (siteSelected) {
+			data.append('target_site',site);
+			if (site.length>0){fullURL = serverURL +"/t/"+site;}
 			//chrome.storage.sync["fullURL"] = fullURL;
 		} else {
 			fullURL = serverURL;
@@ -155,7 +155,7 @@ function loginUser(){
 				document.querySelector('#submitSite').hidden = true;
 				tableauDB.open(getWorkbooks);
 			} else if (sites.length > 0) {
-				console.log("Select Site");
+				console.log("Selecting Default Site");
 				var siteMenu = document.createElement("select");
 				var siteID = '';
 				var siteName = '';
@@ -174,6 +174,7 @@ function loginUser(){
 				siteBtn.innerHTML = "Select";
 				siteBtn.addEventListener('click', selectSite);
 				document.body.appendChild(siteBtn);
+				selectSite();
 			} else {
 				console.log("Error logging in");
 				console.log(this.response);
@@ -185,9 +186,11 @@ function loginUser(){
 };
 
 function selectSite() {
-	site = document.querySelector('#siteMenu').options[document.querySelector('#siteMenu').selectedIndex].id;
+	site = document.querySelector('#siteMenu').options[0].id;
+	if(!site){site="";}
 	//chrome.storage.sync["site"] = site;
 	console.log("Going to site: "+site);
+	siteSelected = true;
 	loginUser();
 };
 
