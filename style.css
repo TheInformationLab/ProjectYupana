@@ -1,0 +1,44 @@
+body{
+	background-color: #FAFAFA;
+}
+
+h2{
+	color:#9B9797;
+	font-size: 15px;
+	font-family: sans-serif;	
+}
+
+.item { 
+	width: 200px;
+	height:50px;
+	border-bottom: 3px solid #F0F0F0;
+	background-color:#FFF;
+ }
+
+.item:hover{
+  cursor: pointer;
+}
+
+.selectedItem{
+	width: 200px;
+	height:50px;
+	border-bottom: 3px solid #F0F0F0;
+	background-color:#000;
+	color: #FFF;
+}
+
+#userContainer{
+	left:250px;
+}
+
+.users { 
+	width: 200px;
+	height:50px;
+	border-bottom: 3px solid #F0F0F0;
+	background-color:#FFF;
+ }
+ 
+ fieldset {
+	margin-bottom: 10px;
+	border:1px solid #ccc; 
+}
