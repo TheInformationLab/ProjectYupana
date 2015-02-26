@@ -4,7 +4,7 @@ var tableauDB = (function () {
 
 	tDB.open = function (callback) {
 		// Database version.
-		var version = 2;
+		var version = 3;
 
 		// Open a connection to the datastore.
 		var request = indexedDB.open('tableau', version);
@@ -16,31 +16,66 @@ var tableauDB = (function () {
 			e.target.transaction.onerror = tDB.onerror;
 
 			// Delete the old datastore.
+			if (db.objectStoreNames.contains('sites')) {
+				db.deleteObjectStore('sites');
+			}
 			if (db.objectStoreNames.contains('users')) {
 				db.deleteObjectStore('users');
+			}
+			if (db.objectStoreNames.contains('projects')) {
+				db.deleteObjectStore('projects');
 			}
 			if (db.objectStoreNames.contains('workbooks')) {
 				db.deleteObjectStore('workbooks');
 			}
+			if (db.objectStoreNames.contains('views')) {
+				db.deleteObjectStore('views');
+			}
+			if (db.objectStoreNames.contains('dataconnections')) {
+				db.deleteObjectStore('dataconnections');
+			}
 			if (db.objectStoreNames.contains('groups')) {
 				db.deleteObjectStore('groups');
 			}
-			if (db.objectStoreNames.contains('User2Group')) {
-				db.deleteObjectStore('User2Group');
+			if (db.objectStoreNames.contains('datasources')) {
+				db.deleteObjectStore('datasources');
 			}
-
+			if (db.objectStoreNames.contains('tasks')) {
+				db.deleteObjectStore('tasks');
+			}
+			if (db.objectStoreNames.contains('subscriptions')) {
+				db.deleteObjectStore('subscriptions');
+			}
 			// Create a new datastore.
+			var store = db.createObjectStore('sites', {
+					keyPath : 'siteID'
+				});
 			var store = db.createObjectStore('users', {
 					keyPath : 'userID'
 				});
+			var store = db.createObjectStore('projects', {
+					keyPath : 'projID'
+				});
 			var store = db.createObjectStore('workbooks', {
-					keyPath : 'twbID'
+					keyPath : 'wrkID'
+				});
+			var store = db.createObjectStore('views', {
+					keyPath : 'viewID'
+				});
+			var store = db.createObjectStore('dataconnections', {
+					keyPath : 'dconnID'
 				});
 			var store = db.createObjectStore('groups', {
 					keyPath : 'grpID'
 				});
-			var store = db.createObjectStore('User2Group', {
-					keyPath : 'userID'
+			var store = db.createObjectStore('datasources', {
+					keyPath : 'dsID'
+				});
+			var store = db.createObjectStore('tasks', {
+					keyPath : 'taskID'
+				});
+			var store = db.createObjectStore('subscriptions', {
+					keyPath : 'subscID'
 				});
 		};
 
@@ -138,6 +173,41 @@ var tableauDB = (function () {
 		};
 
 		cursorRequest.onerror = tDB.onerror;
+	};
+	
+	/**
+	 * Create a new site
+	*/
+	tDB.createSite = function (siteID, friendlyname, namespaceURL, user_quota, content_admin_mode, storage_quota, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['sites'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('sites');
+
+		var site = {
+			'siteID' : siteID,
+			'friendlyName' : friendlyname,
+			'namespaceURL' : namespaceURL,
+			'user_quota' : user_quota,
+			'content_admin_mode' : content_admin_mode,
+			'storage_quota' : storage_quota
+		};
+
+		// Create the datastore request.
+		var request = objStore.put(user);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(user);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
 	};
 	
 	/**
@@ -243,38 +313,6 @@ var tableauDB = (function () {
 		request.onsuccess = function (e) {
 			// Execute the callback function.
 			callback(group);
-		};
-
-		// Handle errors.
-		request.onerror = tDB.onerror;
-	};
-
-	/**
-	 * Create a new group2user
-	*/
-	tDB.createUser2Group = function (groupID, userID, callback) {
-		// Get a reference to the db.
-		var db = datastore;
-
-		// Initiate a new transaction.
-		var transaction = db.transaction(['User2Group'], 'readwrite');
-
-		// Get the datastore.
-		var objStore = transaction.objectStore('User2Group');
-
-		// Create an object for the todo item.
-		var User2Grp = {
-			'grpID' : groupID,
-			'userID' : userID
-		};
-
-		// Create the datastore request.
-		var request = objStore.put(User2Grp);
-
-		// Handle a successful datastore put.
-		request.onsuccess = function (e) {
-			// Execute the callback function.
-			callback(User2Grp);
 		};
 
 		// Handle errors.
