@@ -1,3 +1,34 @@
+var apiToken = "";
+var apiLevel = 0;
+var siteCount = 0;
+
+function checkAPIAccess() {
+	console.log("Check API Access");
+	var loginXML = '<tsRequest><credentials name="'+ document.querySelector('#username').value + '" password="'+document.querySelector('#password').value+'" ><site contentUrl="" /></credentials></tsRequest>'
+	var loginResponse = new XMLHttpRequest();
+	loginResponse.open(
+		"POST",
+		serverURL+"/api/2.0/auth/signin",
+		true);
+	loginResponse.onload = function(){
+		var apiStatus = document.createElement("h4");
+		apiStatus.setAttribute('id','apiStatus');
+		if (this.status == "404") {
+			apiStatus.innerHTML = "REST API Degraded";
+			apiLevel = 0;
+		} else {
+			credentials = loginResponse.responseXML.getElementsByTagName("credentials");
+			apiToken = credentials[0].getAttribute("token");
+			console.log("REST API Token: "+apiToken);
+			apiStatus.innerHTML = "REST API Active";
+			console.log("REST API Login Complete");
+			apiLevel = 1;
+		}
+		document.body.appendChild(apiStatus);
+		getSites();
+	};
+	loginResponse.send(loginXML);
+}
 function getWorkbooks() { 
 	var twbXML = new XMLHttpRequest();
 	twbXML.open(
