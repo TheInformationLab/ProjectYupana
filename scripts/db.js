@@ -91,6 +91,23 @@ var tableauDB = (function () {
 		// Handle errors when opening the datastore.
 		request.onerror = tDB.onerror;
 	};
+	
+	/**
+	Count Records in Table
+	**/
+	
+	tDB.numberofRecords = function(table, callback) {
+		var db = datastore;
+		var transaction = db.transaction([table], "readonly");
+		var objectStore = transaction.objectStore(table); 
+		var count = objectStore.count();
+
+		count.onsuccess = function() {
+			callback(count.result);
+		};		
+	}
+	
+	
 
 	/**
 	 * Fetch all of the users in the datastore.
@@ -198,12 +215,12 @@ var tableauDB = (function () {
 		};
 
 		// Create the datastore request.
-		var request = objStore.put(user);
+		var request = objStore.put(site);
 
 		// Handle a successful datastore put.
 		request.onsuccess = function (e) {
 			// Execute the callback function.
-			callback(user);
+			callback(site);
 		};
 
 		// Handle errors.
