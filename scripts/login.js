@@ -151,10 +151,8 @@ function loginUser(){
 				document.querySelector('#serverURL').hidden = true;
 				document.querySelector('#username').hidden = true;
 				document.querySelector('#password').hidden = true;
-				if (siteSelected) {
-					document.querySelector('#siteMenu').hidden = true;
-					document.querySelector('#submitSite').hidden = true;
-				}
+				document.querySelector('#siteMenu').hidden = true;
+				document.querySelector('#submitSite').hidden = true;
 				tableauDB.open(checkAPIAccess);
 			} else if (sites.length > 0) {
 				console.log("Selecting Default Site");

@@ -110,26 +110,29 @@ var tableauDB = (function () {
 	
 
 	/**
-	 * Fetch all of the values or one specific record from a table
+	 * Fetch all of the users in the datastore.
+	 * @param {function} callback A function that will be executed once the items
+	 *                            have been retrieved. Will be passed a param with
+	 *                            an array of the users.
 	 */
-	tDB.fetchRecords = function (recordID, table, callback) {
+	tDB.fetchUsers = function (userID, callback) {
 		var db = datastore;
-		var transaction = db.transaction([table], 'readonly');
-		var objStore = transaction.objectStore(table);
-		//console.log("Fetinging user: " + userID);
-		var intID = parseInt(recordID);
+		var transaction = db.transaction(['users'], 'readwrite');
+		var objStore = transaction.objectStore('users');
+		console.log("Fetinging user: " + userID);
+		var intID = parseInt(userID);
 		if (intID > 0) {
-			var keyRange = IDBKeyRange.only(intID);
+			var keyRange = IDBKeyRange.only(userID);
 		} else {
 			var keyRange = IDBKeyRange.lowerBound(0);
 		}
 		var cursorRequest = objStore.openCursor(keyRange);
 
-		var records = [];
+		var users = [];
 
 		transaction.oncomplete = function (e) {
 			// Execute the callback function.
-			callback(records);
+			callback(users);
 		};
 
 		cursorRequest.onsuccess = function (e) {
@@ -139,7 +142,7 @@ var tableauDB = (function () {
 				return;
 			}
 
-			records.push(result.value);
+			users.push(result.value);
 
 			result.continue();
 		};
