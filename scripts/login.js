@@ -121,7 +121,7 @@ function loginUser(){
 		authenticity = authXML.responseXML.getElementsByTagName("authenticity_token")[0].innerHTML;
 		var RSA = new RSAKey();
 		RSA.setPublic(modulus, exponent);
-		var res =RSA.encrypt(password);
+		var res = RSA.encrypt(password);
 		console.log(res);
 		var data = new FormData();
 		data.append('crypted', res);
@@ -153,7 +153,7 @@ function loginUser(){
 				document.querySelector('#password').hidden = true;
 				document.querySelector('#siteMenu').hidden = true;
 				document.querySelector('#submitSite').hidden = true;
-				tableauDB.open(getWorkbooks);
+				tableauDB.open(checkAPIAccess);
 			} else if (sites.length > 0) {
 				console.log("Selecting Default Site");
 				var siteMenu = document.createElement("select");
