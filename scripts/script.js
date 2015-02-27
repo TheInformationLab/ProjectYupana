@@ -29,6 +29,42 @@ function checkAPIAccess() {
 	};
 	loginResponse.send(loginXML);
 }
+
+function getSites(){
+	console.log("Getting Site List");
+	var sitesXML = new XMLHttpRequest();
+	sitesXML.open(
+		"GET",
+		serverURL+"/sites.xml",
+		true);
+	sitesXML.onload = function() {
+		sites = sitesXML.responseXML.getElementsByTagName("site");
+		for (var i = 0, site; site = sites[i]; i++) {
+			var siteID = site.getElementsByTagName("id")[0].innerHTML;
+			var friendlyName = site.getElementsByTagName("name")[0].innerHTML;
+			var url_namespace = site.getElementsByTagName("url_namespace")[0].innerHTML;
+			var user_quota = site.getElementsByTagName("user_quota")[0].innerHTML;
+			var content_admin_mode = site.getElementsByTagName("content_admin_mode")[0].innerHTML;
+			var storage_quota = site.getElementsByTagName("storage_quota")[0].innerHTML;
+			tableauDB.createSite(siteID, friendlyName, url_namespace, user_quota, content_admin_mode, storage_quota, function() {
+				console.log("Site "+friendlyName+" saved!");
+				siteCount = i+1;
+			});
+		}
+		tableauDB.numberofRecords("sites", function(count) {
+				var siteContainer = document.createElement("div");
+				siteContainer.setAttribute('id','siteContainer');
+				var siteItem = document.createElement("div");
+				siteItem.setAttribute('class','item');
+				siteItem.setAttribute('id','item');
+				siteItem.innerHTML = "<h2>Site Count</h2><p>"+count+"</p>"; 
+				siteContainer.appendChild(siteItem);
+				document.body.appendChild(siteContainer);
+		});
+	};
+	sitesXML.send();
+}
+
 function getWorkbooks() { 
 	var twbXML = new XMLHttpRequest();
 	twbXML.open(
