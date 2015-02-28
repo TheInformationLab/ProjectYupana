@@ -1,6 +1,8 @@
 var apiToken = "";
 var apiLevel = 0;
 var siteCount = 0;
+var userCount = 0;
+var curUserCount = 0;
 var curCurrentSite = 0;
 var sitesList = [];
 
@@ -77,6 +79,40 @@ function getSites_noAPI(){
 	};
 	sitesXML.send();
 }
+function getUsers_noAPI() {
+	console.log("Getting User List");
+	var usersXML = new XMLHttpRequest();
+	usersXML.open(
+		"GET",
+		fullURL+"/users.xml",
+		true);
+	usersXML.onload = function() {
+		users = usersXML.responseXML.getElementsByTagName("user");
+		curUserCount = users.length;
+		currentUser = 0;
+		for (var i = 0, user; user = users[i]; i++) {
+			var userID = user.getElementsByTagName("id")[0].innerHTML;
+			var name = user.getElementsByTagName("name")[0].innerHTML;
+			var friendly_name = user.getElementsByTagName("friendly_name")[0].innerHTML;
+			var email = user.getElementsByTagName("email")[0].innerHTML;
+			var licensing_level = user.getElementsByTagName("licensing_level")[0].innerHTML;
+			var administrator = user.getElementsByTagName("administrator")[0].innerHTML;
+			var admin_type = user.getElementsByTagName("admin_type")[0].innerHTML;
+			var publisher = user.getElementsByTagName("publisher")[0].innerHTML;
+			var raw_data_suppressor = user.getElementsByTagName("raw_data_suppressor")[0].innerHTML;
+			tableauDB.createUser(userID, name, friendly_name, email, licensing_level, administrator, admin_type, publisher, raw_data_suppressor, function() {
+				console.log("User "+friendly_name+" saved!");
+				currentUser++;
+				if (currentUser == curUserCount) {
+					console.log("All users saved!");
+					getViews_noAPI();
+				}
+			});
+		}	
+	};
+	usersXML.send();
+}
+
 
 function getWorkbooks() { 
 	var twbXML = new XMLHttpRequest();
