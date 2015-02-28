@@ -25,12 +25,16 @@ function checkAPIAccess() {
 			apiLevel = 1;
 		}
 		document.body.appendChild(apiStatus);
-		getSites();
+		if (apiLevel == 0) {
+			getSites_noAPI();
+		} else if (apiLevel == 1) {
+			getSites_API();
+		}
 	};
 	loginResponse.send(loginXML);
 }
 
-function getSites(){
+function getSites_noAPI(){
 	console.log("Getting Site List");
 	var sitesXML = new XMLHttpRequest();
 	sitesXML.open(
@@ -39,6 +43,8 @@ function getSites(){
 		true);
 	sitesXML.onload = function() {
 		sites = sitesXML.responseXML.getElementsByTagName("site");
+		siteCount = sites.length;
+		currentSite = 0;
 		for (var i = 0, site; site = sites[i]; i++) {
 			var siteID = site.getElementsByTagName("id")[0].innerHTML;
 			var friendlyName = site.getElementsByTagName("name")[0].innerHTML;
@@ -48,19 +54,24 @@ function getSites(){
 			var storage_quota = site.getElementsByTagName("storage_quota")[0].innerHTML;
 			tableauDB.createSite(siteID, friendlyName, url_namespace, user_quota, content_admin_mode, storage_quota, function() {
 				console.log("Site "+friendlyName+" saved!");
-				siteCount = i+1;
+				currentSite++;
+				if (currentSite == siteCount) {
+					console.log("All sites saved!")
+					tableauDB.fetchRecords(0,"sites", function(sites) {
+						sitesList = sites;
+						getUsers_noAPI();
+					});
+				}
 			});
 		}
-		tableauDB.numberofRecords("sites", function(count) {
-				var siteContainer = document.createElement("div");
-				siteContainer.setAttribute('id','siteContainer');
-				var siteItem = document.createElement("div");
-				siteItem.setAttribute('class','item');
-				siteItem.setAttribute('id','item');
-				siteItem.innerHTML = "<h2>Site Count</h2><p>"+count+"</p>"; 
-				siteContainer.appendChild(siteItem);
-				document.body.appendChild(siteContainer);
-		});
+		var siteContainer = document.createElement("div");
+		siteContainer.setAttribute('id','siteContainer');
+		var siteItem = document.createElement("div");
+		siteItem.setAttribute('class','item');
+		siteItem.setAttribute('id','item');
+		siteItem.innerHTML = "<h2>Site Count</h2><p>"+siteCount+"</p>"; 
+		siteContainer.appendChild(siteItem);
+		document.body.appendChild(siteContainer);
 	};
 	sitesXML.send();
 }
