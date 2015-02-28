@@ -1,6 +1,8 @@
 var apiToken = "";
 var apiLevel = 0;
 var siteCount = 0;
+var curCurrentSite = 0;
+var sitesList = [];
 
 function checkAPIAccess() {
 	console.log("Check API Access");
