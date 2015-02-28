@@ -4,7 +4,7 @@ var tableauDB = (function () {
 
 	tDB.open = function (callback) {
 		// Database version.
-		var version = 3;
+		var version = 1;
 
 		// Open a connection to the datastore.
 		var request = indexedDB.open('tableau', version);
@@ -227,7 +227,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new user
 	*/
-	tDB.createUser = function (userID, username, friendlyname, email, licensinglevel, administrator, admintype, publisher, callback) {
+	tDB.createUser = function (userID, name, friendly_name, email, licensing_level, administrator, admin_type, publisher, raw_data_suppressor, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -239,14 +239,15 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var user = {
-			'username' : username,
 			'userID' : userID,
-			'friendlyName' : friendlyname,
+			'name' : name,
+			'friendly_name' : friendly_name,
 			'email' : email,
-			'licensingLevel' : licensinglevel,
+			'licensing_level' : licensing_level,
 			'administrator' : administrator,
-			'adminType' : admintype,
-			'publisher' : publisher
+			'admin_type' : admin_type,
+			'publisher' : publisher,
+			'raw_data_suppressor' : raw_data_suppressor
 		};
 
 		// Create the datastore request.
@@ -358,3 +359,19 @@ var tableauDB = (function () {
 	// Export the tDB object.
 	return tDB;
 }());
+
+function deleteDB(indexedDBName) {
+	try {
+		var dbreq = window.indexedDB.deleteDatabase(indexedDBName);
+		dbreq.onsuccess = function (event) {
+		var db = event.result;
+			console.log("indexedDB: " + indexedDBName + " deleted");
+		}
+		dbreq.onerror = function (event) {
+			console.log("indexedDB.delete Error: " + event.message);
+		}	
+	}
+	catch (e) {
+		console.log("Error: " + e.message);
+	}
+}
