@@ -262,6 +262,47 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
+	
+	/**
+	 * Create a new view
+	*/
+	tDB.createView = function (viewID, name, title, index, repository_url, preview_url, updated_at, created_at, ownerID, workbook_url, customized_view_count, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['views'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('views');
+
+		// Create an object for the todo item.
+		var view = {
+			'viewID' : viewID,
+			'name' : name,
+			'title' : title,
+			'index' : index,
+			'repository-url' : repository_url,
+			'preview-url' : preview_url,
+			'updated-at' : updated_at,
+			'created-at' : created_at,
+			'ownerID' : ownerID,
+			'workbook-url' : workbook_url,
+			'customized-view-count' : customized_view_count
+		};
+
+		// Create the datastore request.
+		var request = objStore.put(view);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(view);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
 
 	/**
 	 * Create a new workbook
