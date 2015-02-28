@@ -2,7 +2,9 @@ var apiToken = "";
 var apiLevel = 0;
 var siteCount = 0;
 var userCount = 0;
+var viewCount = 0;
 var curUserCount = 0;
+var curViewCount = 0;
 var curCurrentSite = 0;
 var sitesList = [];
 
@@ -113,6 +115,43 @@ function getUsers_noAPI() {
 	usersXML.send();
 }
 
+function getViews_noAPI() {
+	console.log("Getting Views");
+	var viewsXML = new XMLHttpRequest();
+	viewsXML.open(
+		"GET",
+		fullURL+"/views.xml",
+		true);
+	viewsXML.onload = function() {
+		views = viewsXML.responseXML.getElementsByTagName("view");
+		curViewCount = views.length;
+		currentView = 0;
+		for (var i = 0, view; view = views[i]; i++) {
+			var viewID = view.getElementsByTagName("id")[0].innerHTML;
+			var name = view.getElementsByTagName("name")[0].innerHTML;
+			var title = view.getElementsByTagName("title")[0].innerHTML;
+			var index = view.getElementsByTagName("index")[0].innerHTML;
+			var repository_url = view.getElementsByTagName("repository-url")[0].innerHTML;
+			var preview_url = view.getElementsByTagName("preview-url")[0].innerHTML;
+			var updated_at = view.getElementsByTagName("updated-at")[0].innerHTML;
+			var created_at = view.getElementsByTagName("created-at")[0].innerHTML;
+			var ownerID = view.getElementsByTagName("owner")[0].getElementsByTagName("id")[0].innerHTML;
+			var workbook_url = view.getElementsByTagName("workbook-url")[0].innerHTML;
+			var customized_views = view.getElementsByTagName("customized-view");
+			var customized_view_count = customized_views.length;
+			tableauDB.createView(viewID, name, title, index, repository_url, preview_url, updated_at, created_at, ownerID, workbook_url, customized_view_count, function() {
+				console.log("View "+name+" saved!");
+				currentView++;
+				if (currentView == curViewCount) {
+					console.log("All views saved!");
+					getWorkbooks_noAPI();
+				}
+			});
+		}
+	};
+	viewsXML.send();
+	
+}
 
 function getWorkbooks() { 
 	var twbXML = new XMLHttpRequest();
