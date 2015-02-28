@@ -27,7 +27,7 @@ function checkLoggedIn() {
 				var serURL = document.createElement("input");
 				serURL.setAttribute('id','serURL');
 				serURL.setAttribute('type','text');
-				serURL.setAttribute('value','https://tableauserver.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
+				serURL.setAttribute('value','https://beta.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
 				var urlSubmit = document.createElement("button");
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
@@ -47,7 +47,7 @@ function checkLoggedIn() {
 				var serURL = document.createElement("input");
 				serURL.setAttribute('id','serURL');
 				serURL.setAttribute('type','text');
-				serURL.setAttribute('value','https://tableauserver.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
+				serURL.setAttribute('value','https://beta.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
 				var urlSubmit = document.createElement("button");
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
@@ -96,7 +96,9 @@ function serURLSubmit(){
 		var loginBtn = document.createElement("button");
 		loginBtn.setAttribute('id','login');
 		loginBtn.innerHTML = "Login";
-		loginBtn.addEventListener('click', loginUser);
+		loginBtn.addEventListener('click', function(){
+			loginUser();
+		}, false);
 		document.body.appendChild(userField);
 		document.body.appendChild(passField);
 		document.body.appendChild(loginBtn);
@@ -105,7 +107,7 @@ function serURLSubmit(){
 	console.log("serURLSubmit: complete");
 };
 
-function loginUser(){
+function loginUser(site, callback){
 	console.log("LoginUser"); 
 	document.querySelector('#login').hidden = true;
 	password = document.querySelector('#password').value;
@@ -126,18 +128,14 @@ function loginUser(){
 		var data = new FormData();
 		data.append('crypted', res);
 		data.append('authenticity_token', authenticity);
-		console.log("Site Selected? " + siteSelected)
-		if (siteSelected) {
-			data.append('target_site',site);
-			if (site.length>0){fullURL = serverURL +"/t/"+site;}
-			//chrome.storage.sync["fullURL"] = fullURL;
-		} else {
+		if (!siteSelected) {
 			fullURL = serverURL;
-			//chrome.storage.sync["fullURL"] = fullURL;
+		} else {
+			data.append('target_site',site);
 		}
 		data.append('username', document.querySelector('#username').value);
 		console.log(document.querySelector('#username').value);
-		console.log(site);
+		console.log("Site " + site);
 		var loginXML = new XMLHttpRequest();
 		loginXML.open(
 			"POST",
@@ -151,32 +149,26 @@ function loginUser(){
 				document.querySelector('#serverURL').hidden = true;
 				document.querySelector('#username').hidden = true;
 				document.querySelector('#password').hidden = true;
-				if (siteSelected) {
-					document.querySelector('#siteMenu').hidden = true;
-					document.querySelector('#submitSite').hidden = true;
-				}
+				deleteDB('tableau');
 				tableauDB.open(checkAPIAccess);
-			} else if (sites.length > 0) {
-				console.log("Selecting Default Site");
-				var siteMenu = document.createElement("select");
-				var siteID = '';
-				var siteName = '';
-				siteMenu.setAttribute('id','siteMenu');
-				for (var i = 0, site; site = sites[i]; i++) {
-					siteID = site["id"];
-					siteName = site.innerHTML;
-					var siteValue = document.createElement("option");
-					siteValue.setAttribute('id',siteID);
-					siteValue.innerHTML = siteName;
-					siteMenu.appendChild(siteValue);
+			} else if (sites.length > 0 && !site) {
+				console.log("Fresh Login, going to default site")
+				var defaultSiteID = sites[0].getAttribute("id");
+				console.log("Default site ID: "+ defaultSiteID);
+				if (defaultSiteID.length > 0) {
+					fullURL = serverURL +"/t/"+defaultSiteID;
+				} else {
+					fullURL = serverURL;
 				}
-				document.body.appendChild(siteMenu);
-				var siteBtn = document.createElement("button");
-				siteBtn.setAttribute('id','submitSite');
-				siteBtn.innerHTML = "Select";
-				siteBtn.addEventListener('click', selectSite);
-				document.body.appendChild(siteBtn);
-				selectSite();
+				siteSelected = true;
+				loginUser(defaultSiteID);
+			} else if (site) {
+				console.log("Logging into site "+site);
+				if (site.length > 0) {
+					fullURL = serverURL +"/t/"+site;
+					siteSelected = true;
+				} 
+				loginUser(site);
 			} else {
 				console.log("Error logging in");
 				console.log(this.response);
@@ -187,13 +179,74 @@ function loginUser(){
 	authXML.send(null);
 };
 
-function selectSite() {
-	site = document.querySelector('#siteMenu').options[0].id;
-	if(!site){site="";}
-	//chrome.storage.sync["site"] = site;
-	console.log("Going to site: "+site);
-	siteSelected = true;
-	loginUser();
+function switchSite(site){
+	console.log("Switching Site"); 
+	password = document.querySelector('#password').value;
+	var authXML = new XMLHttpRequest();
+	authXML.open(
+		"GET",
+		serverURL+"/auth.xml",
+		true);
+	console.log("LoginUser: authXML.onload going to readAuth()");
+	authXML.onload = function(){
+		modulus = authXML.responseXML.getElementsByTagName("modulus")[0].innerHTML;
+		exponent = authXML.responseXML.getElementsByTagName("exponent")[0].innerHTML;
+		authenticity = authXML.responseXML.getElementsByTagName("authenticity_token")[0].innerHTML;
+		var RSA = new RSAKey();
+		RSA.setPublic(modulus, exponent);
+		var res = RSA.encrypt(password);
+		console.log(res);
+		var data = new FormData();
+		data.append('crypted', res);
+		data.append('authenticity_token', authenticity);
+		if (!siteSelected) {
+			fullURL = serverURL;
+		} else {
+			data.append('target_site',site);
+		}
+		data.append('username', document.querySelector('#username').value);
+		console.log(document.querySelector('#username').value);
+		console.log("Site " + site);
+		var loginXML = new XMLHttpRequest();
+		loginXML.open(
+			"POST",
+			serverURL+"/auth/login.xml",
+			true);
+		loginXML.onload = function(){
+			var sites = loginXML.responseXML.getElementsByTagName("site");
+			var user = loginXML.responseXML.getElementsByTagName("user");
+			if (user.length > 0) {
+				console.log("Login Successful");
+				document.querySelector('#serverURL').hidden = true;
+				document.querySelector('#username').hidden = true;
+				document.querySelector('#password').hidden = true;
+				tableauDB.open(getUsers_noAPI);
+			} else if (sites.length > 0 && !site) {
+				console.log("Fresh Login, going to default site")
+				var defaultSiteID = sites[0].getAttribute("id");
+				console.log("Default site ID: "+ defaultSiteID);
+				if (defaultSiteID.length > 0) {
+					fullURL = serverURL +"/t/"+defaultSiteID;
+				} else {
+					fullURL = serverURL;
+				}
+				siteSelected = true;
+				loginUser(defaultSiteID);
+			} else if (site) {
+				console.log("Logging into site "+site);
+				if (site.length > 0) {
+					fullURL = serverURL +"/t/"+site;
+					siteSelected = true;
+				} 
+				loginUser(site);
+			} else {
+				console.log("Error logging in");
+				console.log(this.response);
+			}
+		};
+		loginXML.send(data);
+		};
+	authXML.send(null);
 };
 
 checkLoggedIn();
