@@ -19,7 +19,8 @@ var sitesList = [];
 function checkAPIAccess() {
 	$('.ajax-loading').show();
 	console.log("Check API Access");
-	var loginXML = '<tsRequest><credentials name="'+ document.querySelector('#username').value + '" password="'+document.querySelector('#password').value+'" ><site contentUrl="" /></credentials></tsRequest>'
+	var loginXML = '<tsRequest><credentials name="'+ document.querySelector('#username').value + '" password="'+document.querySelector('#password').value+
+					'" ><site contentUrl="" /></credentials></tsRequest>';
 	var loginResponse = new XMLHttpRequest();
 	loginResponse.open(
 		"POST",
@@ -43,7 +44,7 @@ function checkAPIAccess() {
 		if (apiLevel == 0) {
 			getSites_noAPI();
 		} else if (apiLevel == 1) {
-			getSites_API();
+			getSites_noAPI();
 		}
 	};
 	loginResponse.send(loginXML);
@@ -75,6 +76,7 @@ function getServerLogo(){
 
 function getSites_noAPI(){
 	console.log("Getting Site List");
+	document.getElementById("loadingMsg").innerHTML = "Getting List of Sites";
 	var sitesXML = new XMLHttpRequest();
 	sitesXML.open(
 		"GET",
@@ -98,21 +100,13 @@ function getSites_noAPI(){
 					console.log("All sites saved!")
 					tableauDB.fetchRecords(0,"sites", function(sites) {
 						sitesList = sites;
-						getUsers_noAPI();
 						initiliseStatsTiles();
 						document.getElementById("loadingMsg").innerHTML = "Getting Default Site";
+						getServerElements_noAPI();
 					});
 				}
 			});
 		}
-		var siteContainer = document.createElement("div");
-		siteContainer.setAttribute('id','siteContainer');
-		var siteItem = document.createElement("div");
-		siteItem.setAttribute('class','item');
-		siteItem.setAttribute('id','item');
-		siteItem.innerHTML = "<h2>Site Count</h2><p>"+siteCount+"</p>"; 
-		siteContainer.appendChild(siteItem);
-		document.body.appendChild(siteContainer);
 	};
 	sitesXML.send();
 }
@@ -176,7 +170,6 @@ function getUsers_noAPI() {
 		curUserCount = users.length;
 		currentUser = 0;
 		for (var i = 0, user; user = users[i]; i++) {
-			var userID = user.getElementsByTagName("id")[0].innerHTML;
 			var name = user.getElementsByTagName("name")[0].innerHTML;
 			var friendly_name = user.getElementsByTagName("friendly_name")[0].innerHTML;
 			var email = user.getElementsByTagName("email")[0].innerHTML;
@@ -185,12 +178,13 @@ function getUsers_noAPI() {
 			var admin_type = user.getElementsByTagName("admin_type")[0].innerHTML;
 			var publisher = user.getElementsByTagName("publisher")[0].innerHTML;
 			var raw_data_suppressor = user.getElementsByTagName("raw_data_suppressor")[0].innerHTML;
-			tableauDB.createUser(userID, name, friendly_name, email, licensing_level, administrator, admin_type, publisher, raw_data_suppressor, function() {
+			tableauDB.createUser(name, friendly_name, email, licensing_level, administrator, admin_type, publisher, raw_data_suppressor, function() {
 				console.log("User "+friendly_name+" saved!");
 				currentUser++;
 				if (currentUser == curUserCount) {
 					console.log("All users saved!");
-					getViews_noAPI();
+					curUserCount = -curCurrentSite;
+					switchSite();
 				}
 			});
 		}	
@@ -208,7 +202,12 @@ function getViews_noAPI() {
 	viewsXML.onload = function() {
 		views = viewsXML.responseXML.getElementsByTagName("view");
 		curViewCount = views.length;
+		viewCount = viewCount + curViewCount;
 		currentView = 0;
+		if (views.length == 0) {
+			curViewCount = -curCurrentSite;
+			switchSite();
+		}
 		for (var i = 0, view; view = views[i]; i++) {
 			var viewID = view.getElementsByTagName("id")[0].innerHTML;
 			var name = view.getElementsByTagName("name")[0].innerHTML;
@@ -222,12 +221,15 @@ function getViews_noAPI() {
 			var workbook_url = view.getElementsByTagName("workbook-url")[0].innerHTML;
 			var customized_views = view.getElementsByTagName("customized-view");
 			var customized_view_count = customized_views.length;
-			tableauDB.createView(viewID, name, title, index, repository_url, preview_url, updated_at, created_at, ownerID, workbook_url, customized_view_count, function() {
+			var siteID = sitesList[curCurrentSite].siteID;
+			tableauDB.createView(viewID, name, title, index, repository_url, preview_url, updated_at, created_at, ownerID, workbook_url, customized_view_count, siteID, function() {
 				console.log("View "+name+" saved!");
 				currentView++;
 				if (currentView == curViewCount) {
 					console.log("All views saved!");
-					getWorkbooks_noAPI();
+					document.getElementById("item view").innerHTML = "<h2>"+viewCount+"</h2> views"
+					curViewCount = -curCurrentSite;
+					switchSite();
 				}
 			});
 		}
@@ -236,9 +238,6 @@ function getViews_noAPI() {
 	
 }
 
-function getWorkbooks() { 
-	var twbXML = new XMLHttpRequest();
-	twbXML.open(
 function getWorkbooks_noAPI() { 
 	console.log("Getting workbooks")
 	var workbookXML = new XMLHttpRequest();
@@ -314,15 +313,7 @@ function getProjects_noAPI() {
 					switchSite();
 				}
 			});
-			var twbItem = document.createElement("div");
-			twbItem.setAttribute('class','item');
-			twbItem.setAttribute('id','item');
-			twbItem.innerHTML = name; 
-			twbItem.setAttribute('workbookRep',repositoryurl);
-			twbItem.setAttribute('workbookID',twbID);
-			twbContainer.appendChild(twbItem);
 		}
-		document.body.appendChild(twbContainer);
 	};
 	projectsXML.send();
 	
@@ -505,10 +496,6 @@ function initiliseStatsTiles() {
 		iso.on('layoutComplete', function(){
 			document.querySelector('#twbContainer').style = 'static';
 			console.log("Workbook Layout Done!");
-		});
-	};
-	twbXML.send(null);
-};
 		}); */
 
 function listUsers(){
