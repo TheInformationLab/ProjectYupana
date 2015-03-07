@@ -231,25 +231,52 @@ function getViews_noAPI() {
 function getWorkbooks() { 
 	var twbXML = new XMLHttpRequest();
 	twbXML.open(
+function getWorkbooks_noAPI() { 
+	console.log("Getting workbooks")
+	var workbookXML = new XMLHttpRequest();
+	workbookXML.open(
 		"GET",
 		fullURL+"/workbooks.xml",
 		true);
-	console.log("getWorkbooks: twbXML.onload going to readAuth()");
-	twbXML.onload = function(){
-		workbooks = twbXML.responseXML.getElementsByTagName("workbook");
-		var twbContainer = document.createElement("div");
-		twbContainer.setAttribute('id','twbContainer');
-		for (var i = 0, twb; twb = workbooks[i]; i++) {
-			var twbID = twb.getElementsByTagName("id")[0].innerHTML;
-			var name = twb.getElementsByTagName("name")[0].innerHTML;
-			var path = twb.getElementsByTagName("path")[0].innerHTML;
-			var ownerID = twb.getElementsByTagName("owner")[0].getElementsByTagName("id")[0].innerHTML;
-			var projectID = twb.getElementsByTagName("project")[0].getElementsByTagName("id")[0].innerHTML;
-			var updatedat = twb.getElementsByTagName("updated-at")[0].innerHTML;
-			var createdat = twb.getElementsByTagName("created-at")[0].innerHTML;
-			var repositoryurl = twb.getElementsByTagName("repository-url")[0].innerHTML;
-			tableauDB.createTwb(twbID,name,path,ownerID,projectID,updatedat,createdat,repositoryurl, function() {
+	workbookXML.onload = function(){
+		workbooks = workbookXML.responseXML.getElementsByTagName("workbook");
+		curWorkbookCount = workbooks.length;
+		workbookCount = workbookCount + curWorkbookCount;
+		currentWorkbook = 0;
+		if (workbooks.length == 0) {
+			curWorkbookCount = -curCurrentSite;
+			switchSite();
+		}
+		for (var i = 0, workbook; workbook = workbooks[i]; i++) {
+			var workbookID = workbook.getElementsByTagName("id")[0].innerHTML;
+			var name = workbook.getElementsByTagName("name")[0].innerHTML;
+			var size = workbook.getElementsByTagName("size")[0].innerHTML;
+			var path = workbook.getElementsByTagName("path")[0].innerHTML;
+			var ownerID = workbook.getElementsByTagName("owner")[0].getElementsByTagName("id")[0].innerHTML;
+			var projectID = workbook.getElementsByTagName("project")[0].getElementsByTagName("id")[0].innerHTML;
+			var tasks = workbook.getElementsByTagName("tasks");
+			var tasks_count = tasks.length;
+			var updated_at = workbook.getElementsByTagName("updated-at")[0].innerHTML;
+			var created_at = workbook.getElementsByTagName("created-at")[0].innerHTML;
+			var repository_url = workbook.getElementsByTagName("repository-url")[0].innerHTML;
+			var tabs_allowed = workbook.getElementsByTagName("tabs_allowed")[0].innerHTML;
+			var siteID = sitesList[curCurrentSite].siteID;
+			tableauDB.createWorkbook(workbookID, name, size, path, ownerID, projectID , tasks_count, updated_at,created_at, repository_url, tabs_allowed,siteID, function() {
 				console.log("Workbook "+ name+" saved!");
+				currentWorkbook++;
+				if (currentWorkbook == curWorkbookCount) {
+					console.log("All workbooks saved!");
+					document.getElementById("item workbook").innerHTML = "<h2>"+workbookCount+"</h2> workbooks"
+					curWorkbookCount = -curCurrentSite;
+					switchSite();
+				}
+			});
+		}
+		
+	};
+	workbookXML.send(null);
+};
+
 			});
 			var twbItem = document.createElement("div");
 			twbItem.setAttribute('class','item');
