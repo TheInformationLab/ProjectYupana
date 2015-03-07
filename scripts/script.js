@@ -2,6 +2,7 @@ var apiToken = "";
 var apiLevel = 0;
 var siteCount = 0;
 var userCount = 0;
+var groupCount = 0;
 var viewCount = 0;
 var workbookCount = 0;
 var projCount = 0;
@@ -9,6 +10,7 @@ var dataCount = 0;
 var taskCount = 0;
 var subscriptionCount = 0;
 var curUserCount = 0;
+var curGroupCount = 0;
 var curViewCount = 0;
 var curWorkbookCount = 0;
 var curProjCount = 0;
@@ -115,7 +117,7 @@ function getSites_noAPI(){
 
 function switchSite() {
 	if (curCurrentSite < siteCount - 1 && curUserCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curDataCount == -curCurrentSite
-		&& curTaskCount == -curCurrentSite && curSubscriptionCount == -curCurrentSite){
+		&& curTaskCount == -curCurrentSite && curSubscriptionCount == -curCurrentSite && curGroupCount == -curCurrentSite){
 		curCurrentSite++;
 		try {
 			countUsers();
@@ -130,7 +132,7 @@ function switchSite() {
 			console.log(sitesList[curCurrentSite]);
 		}
 	} else if (curCurrentSite == siteCount - 1 && curUserCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curDataCount == -curCurrentSite
-				&& curTaskCount == -curCurrentSite  && curSubscriptionCount == -curCurrentSite) {
+				&& curTaskCount == -curCurrentSite  && curSubscriptionCount == -curCurrentSite && curGroupCount == -curCurrentSite) {
 		console.log("FINISHED LOADING!!");
 		countUsers();
 		$('.ajax-loading').hide();
@@ -147,6 +149,7 @@ function logIntoNextSite(siteNameSpace) {
 
 function getServerElements_noAPI() {
 	getUsers_noAPI();
+	getGroups_noAPI();
 	getViews_noAPI();
 	getWorkbooks_noAPI();
 	getProjects_noAPI();
@@ -193,6 +196,43 @@ function getUsers_noAPI() {
 		}	
 	};
 	usersXML.send();
+}
+
+function getGroups_noAPI() {
+	console.log("Getting groups");
+	var groupXML = new XMLHttpRequest();
+	groupXML.open(
+		"GET",
+		fullURL+"/groups.xml",
+		true);
+	groupXML.onload = function() {
+		groups = groupXML.responseXML.getElementsByTagName("group");
+		curGroupCount = groups.length;
+		groupCount = groupCount + curGroupCount;
+		currentGroup = 0;
+		if (groups.length == 0) {
+			curGroupCount = -curCurrentSite;
+			switchSite();
+		}
+		for (var i = 0, group; group = groups[i]; i++) {
+			var groupID = group.getElementsByTagName("id")[0].innerHTML;
+			var name = group.getElementsByTagName("name")[0].innerHTML;
+			var domain = group.getElementsByTagName("domain")[0].innerHTML;
+			var siteID = sitesList[curCurrentSite].siteID;
+			tableauDB.createGroup(groupID, name, domain, siteID, function() {
+				console.log("Group "+name+" saved!");
+				currentGroup++;
+				if (currentGroup == curGroupCount) {
+					console.log("All groups saved!");
+					document.getElementById("item group").innerHTML = "<h2>"+groupCount+"</h2> groups";
+					curGroupCount = -curCurrentSite;
+					switchSite();
+				}
+			});
+		}
+	};
+	groupXML.send();
+	
 }
 
 function getViews_noAPI() {
@@ -466,6 +506,11 @@ function initiliseStatsTiles() {
 		userCountDiv.setAttribute('id','item user');
 		userCountDiv.innerHTML = "<h2>"+userCount+"</h2> users"; 
 		statsContainer.appendChild(userCountDiv);
+		var groupCountDiv = document.createElement("div");
+		groupCountDiv.setAttribute('class','item');
+		groupCountDiv.setAttribute('id','item group');
+		groupCountDiv.innerHTML = "<h2>"+groupCount+"</h2> groups"; 
+		statsContainer.appendChild(groupCountDiv);
 		var projectCountDiv = document.createElement("div");
 		projectCountDiv.setAttribute('class','item');
 		projectCountDiv.setAttribute('id','item project');

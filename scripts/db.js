@@ -66,7 +66,7 @@ var tableauDB = (function () {
 					keyPath : 'dconnID'
 				});
 			var store = db.createObjectStore('groups', {
-					keyPath : 'grpID'
+					keyPath : 'groupID'
 				});
 			var store = db.createObjectStore('datasources', {
 					keyPath : 'dataID'
@@ -256,6 +256,40 @@ var tableauDB = (function () {
 		request.onsuccess = function (e) {
 			// Execute the callback function.
 			callback(user);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+	
+	/**
+	 * Create a new group
+	*/
+	tDB.createGroup = function (groupID, name, domain, siteID, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['groups'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('groups');
+
+		// Create an object for the todo item.
+		var group = {
+			'groupID' : groupID,
+			'name' : name,
+			'domain' : domain,
+			'siteID' : siteID
+		};
+
+		// Create the datastore request.
+		var request = objStore.put(group);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(group);
 		};
 
 		// Handle errors.
@@ -499,39 +533,6 @@ var tableauDB = (function () {
 		request.onsuccess = function (e) {
 			// Execute the callback function.
 			callback(subscription);
-		};
-
-		// Handle errors.
-		request.onerror = tDB.onerror;
-	};
-	
-	/**
-	 * Create a new group
-	 */
-	tDB.createGroup = function (groupID, name, friendlyname, callback) {
-		// Get a reference to the db.
-		var db = datastore;
-
-		// Initiate a new transaction.
-		var transaction = db.transaction(['groups'], 'readwrite');
-
-		// Get the datastore.
-		var objStore = transaction.objectStore('groups');
-
-		// Create an object for the todo item.
-		var group = {
-			'grpID' : groupID,
-			'name' : name,
-			'friendlyname' : friendlyname
-		};
-
-		// Create the datastore request.
-		var request = objStore.put(group);
-
-		// Handle a successful datastore put.
-		request.onsuccess = function (e) {
-			// Execute the callback function.
-			callback(group);
 		};
 
 		// Handle errors.
