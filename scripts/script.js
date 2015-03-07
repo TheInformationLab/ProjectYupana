@@ -324,6 +324,53 @@ function getDataSources_noAPI() {
 	dataXML.send();
 	
 }
+
+function getTasks_noAPI() {
+	console.log("Getting Tasks");
+	var taskXML = new XMLHttpRequest();
+	taskXML.open(
+		"GET",
+		fullURL+"/tasks.xml",
+		true);
+	taskXML.onload = function() {
+		tasks = taskXML.responseXML.getElementsByTagName("task");
+		curTaskCount = tasks.length;
+		taskCount = taskCount + curTaskCount;
+		currentTask = 0;
+		if (tasks.length == 0) {
+			curTaskCount = -curCurrentSite;
+			switchSite();
+		}
+		for (var i = 0, task; task = tasks[i]; i++) {
+			var taskID = task.getElementsByTagName("id")[0].innerHTML;
+			var type = task.getElementsByTagName("type")[0].innerHTML;
+			var priority = task.getElementsByTagName("priority")[0].innerHTML;
+			var targetID = task.getElementsByTagName("object")[0].getElementsByTagName("id")[0].innerHTML;
+			var targetName = task.getElementsByTagName("object")[0].getElementsByTagName("name")[0].innerHTML;
+			var targetType = task.getElementsByTagName("object")[0].getElementsByTagName("type")[0].innerHTML;
+			var scheduleID = task.getElementsByTagName("schedule")[0].getElementsByTagName("id")[0].innerHTML;
+			var scheduleName = task.getElementsByTagName("schedule")[0].getElementsByTagName("name")[0].innerHTML;
+			var schedulePriority = task.getElementsByTagName("schedule")[0].getElementsByTagName("priority")[0].innerHTML;
+			var scheduleEnabled = task.getElementsByTagName("schedule")[0].getElementsByTagName("enabled")[0].innerHTML;
+			var schedule_next_run = task.getElementsByTagName("schedule")[0].getElementsByTagName("run-next-at")[0].innerHTML;
+			var schedule_updated_at = task.getElementsByTagName("schedule")[0].getElementsByTagName("updated-at")[0].innerHTML;	
+			var siteID = sitesList[curCurrentSite].siteID;
+			tableauDB.createTask(taskID, type, priority, targetID, targetName, targetType, scheduleID, scheduleName, schedulePriority,
+								 scheduleEnabled, schedule_next_run, schedule_updated_at, siteID, function() {
+				console.log("Task "+name+" saved!");
+				currentTask++;
+				if (currentTask == curTaskCount) {
+					console.log("All tasks saved!");
+					document.getElementById("item task").innerHTML = "<h2>"+taskCount+"</h2> tasks";
+					curTaskCount = -curCurrentSite;
+					switchSite();
+				}
+			});
+		}
+	};
+	taskXML.send();
+	
+}
 function initiliseStatsTiles() {
 		var statsContainer = document.createElement("div");
 		statsContainer.setAttribute('id','statsContainer');
