@@ -41,6 +41,30 @@ function checkAPIAccess() {
 	loginResponse.send(loginXML);
 }
 
+function getServerLogo(){
+	var logoXML = new XMLHttpRequest();
+	logoXML.open (
+		"GET",
+		serverURL+"/auth/",
+		true);
+	logoXML.onload = function() {
+		var pageHTML = logoXML.responseText;
+		var header = pageHTML.substr(pageHTML.search("img"),100);
+		header = header.substr(header.search("src")+5,100);
+		header = header.substr(0,header.search('"'));
+		console.log(header);
+		var imageURL = serverURL + header;
+		var logoDiv = document.createElement("div");
+		var logoIMG = document.createElement("img");
+		logoDiv.setAttribute('class','serverLogo');
+		logoDiv.setAttribute('id','serverLogo');
+		logoIMG.setAttribute('src',imageURL);
+		logoDiv.appendChild(logoIMG);
+		document.body.appendChild(logoDiv);
+	}
+	logoXML.send();
+}
+
 function getSites_noAPI(){
 	console.log("Getting Site List");
 	var sitesXML = new XMLHttpRequest();
