@@ -265,7 +265,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new view
 	*/
-	tDB.createView = function (viewID, name, title, index, repository_url, preview_url, updated_at, created_at, ownerID, workbook_url, customized_view_count, callback) {
+	tDB.createView = function (viewID, name, title, index, repository_url, preview_url, updated_at, created_at, ownerID, workbook_url, customized_view_count,siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -287,7 +287,8 @@ var tableauDB = (function () {
 			'created-at' : created_at,
 			'ownerID' : ownerID,
 			'workbook-url' : workbook_url,
-			'customized-view-count' : customized_view_count
+			'customized-view-count' : customized_view_count,
+			'siteID' : siteID
 		};
 
 		// Create the datastore request.
@@ -306,7 +307,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new workbook
 	*/
-	tDB.createTwb = function (twbID, name, path, ownerID, projectID, updatedat, createdat, repositoryurl, callback) {
+	tDB.createWorkbook = function (workbookID, name, size, path, ownerID, projectID , tasks_count, updated_at,created_at, repository_url, tabs_allowed,siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -318,14 +319,18 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var workbook = {
-			'twbID' : twbID,
+			'workbookID' : workbookID,
 			'name' : name,
+			'size' : size,
 			'path' : path,
 			'ownerID' : ownerID,
 			'projectID' : projectID,
-			'updated-at' : updatedat,
-			'created-at' : createdat,
-			'repository-url' : repositoryurl
+			'tasks-count' : tasks_count,
+			'updated-at' : updated_at,
+			'created-at' : created_at,
+			'repository-url' : repository_url,
+			'tabs-allowed' : tabs_allowed,
+			'siteID' : siteID
 		};
 
 		// Create the datastore request.
