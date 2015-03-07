@@ -75,7 +75,7 @@ var tableauDB = (function () {
 					keyPath : 'taskID'
 				});
 			var store = db.createObjectStore('subscriptions', {
-					keyPath : 'subscID'
+					keyPath : 'subscriptionID'
 				});
 		};
 
@@ -455,6 +455,50 @@ var tableauDB = (function () {
 		request.onsuccess = function (e) {
 			// Execute the callback function.
 			callback(task);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+	
+	/**
+	 * Create a new subscription
+	 */
+	
+	tDB.createSubscription= function (subscriptionID, subject, userID, userName, userEmail, scheduleID, scheduleName, schedulePriority,
+								 scheduleEnabled, schedule_next_run, schedule_updated_at, siteID, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['subscriptions'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('subscriptions');
+
+		// Create an object for the todo item.
+		var subscription = {
+			'subscriptionID' : subscriptionID,
+			'subject' : subject,
+			'userID' : userID,
+			'userName' : userName,
+			'userEmail' : userEmail,
+			'scheduleID' : scheduleID,
+			'scheduleName' : scheduleName,
+			'schedulePriority' : schedulePriority,
+			'scheduleEnabled' : scheduleEnabled,
+			'schedule_next_run' : schedule_next_run,
+			'schedule_updated_at' : schedule_updated_at,
+			'siteID' : siteID
+		};
+
+		// Create the datastore request.
+		var request = objStore.put(subscription);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(subscription);
 		};
 
 		// Handle errors.

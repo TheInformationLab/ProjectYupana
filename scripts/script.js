@@ -7,12 +7,14 @@ var workbookCount = 0;
 var projCount = 0;
 var dataCount = 0;
 var taskCount = 0;
+var subscriptionCount = 0;
 var curUserCount = 0;
 var curViewCount = 0;
 var curWorkbookCount = 0;
 var curProjCount = 0;
 var curDataCount = 0;
 var curTaskCount = 0;
+var curSubscriptionCount = 0;
 var curCurrentSite = 0;
 var sitesList = [];
 
@@ -113,7 +115,7 @@ function getSites_noAPI(){
 
 function switchSite() {
 	if (curCurrentSite < siteCount - 1 && curUserCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curDataCount == -curCurrentSite
-		&& curTaskCount == -curCurrentSite){
+		&& curTaskCount == -curCurrentSite && curSubscriptionCount == -curCurrentSite){
 		curCurrentSite++;
 		try {
 			countUsers();
@@ -128,7 +130,7 @@ function switchSite() {
 			console.log(sitesList[curCurrentSite]);
 		}
 	} else if (curCurrentSite == siteCount - 1 && curUserCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curDataCount == -curCurrentSite
-				&& curTaskCount == -curCurrentSite) {
+				&& curTaskCount == -curCurrentSite  && curSubscriptionCount == -curCurrentSite) {
 		console.log("FINISHED LOADING!!");
 		countUsers();
 		$('.ajax-loading').hide();
@@ -150,6 +152,7 @@ function getServerElements_noAPI() {
 	getProjects_noAPI();
 	getDataSources_noAPI();
 	getTasks_noAPI();
+	getSubscriptions_noAPI();
 }
 
 function countUsers() {
@@ -403,6 +406,53 @@ function getTasks_noAPI() {
 	taskXML.send();
 	
 }
+
+function getSubscriptions_noAPI() {
+	console.log("Getting subscriptions");
+	var subscriptionXML = new XMLHttpRequest();
+	subscriptionXML.open(
+		"GET",
+		fullURL+"/subscriptions.xml",
+		true);
+	subscriptionXML.onload = function() {
+		subscriptions = subscriptionXML.responseXML.getElementsByTagName("subscription");
+		curSubscriptionCount = subscriptions.length;
+		subscriptionCount = subscriptionCount + curSubscriptionCount;
+		currentSubscription = 0;
+		if (subscriptions.length == 0) {
+			curSubscriptionCount = -curCurrentSite;
+			switchSite();
+		}
+		for (var i = 0, subscription; subscription = subscriptions[i]; i++) {
+			var subscriptionID = subscription.getElementsByTagName("id")[0].innerHTML;
+			var subject = subscription.getElementsByTagName("subject")[0].innerHTML;
+			var userID = subscription.getElementsByTagName("user")[0].getElementsByTagName("id")[0].innerHTML;
+			var userName = subscription.getElementsByTagName("user")[0].getElementsByTagName("name")[0].innerHTML;
+			var userEmail = subscription.getElementsByTagName("user")[0].getElementsByTagName("email")[0].innerHTML;
+			var scheduleID = subscription.getElementsByTagName("schedule")[0].getElementsByTagName("id")[0].innerHTML;
+			var scheduleName = subscription.getElementsByTagName("schedule")[0].getElementsByTagName("name")[0].innerHTML;
+			var schedulePriority = subscription.getElementsByTagName("schedule")[0].getElementsByTagName("priority")[0].innerHTML;
+			var scheduleEnabled = subscription.getElementsByTagName("schedule")[0].getElementsByTagName("enabled")[0].innerHTML;
+			var schedule_next_run = subscription.getElementsByTagName("schedule")[0].getElementsByTagName("run-next-at")[0].innerHTML;
+			var schedule_updated_at = subscription.getElementsByTagName("schedule")[0].getElementsByTagName("updated-at")[0].innerHTML;	
+			var siteID = sitesList[curCurrentSite].siteID;
+			tableauDB.createSubscription(subscriptionID, subject, userID, userName, userEmail, scheduleID, scheduleName, schedulePriority,
+								 scheduleEnabled, schedule_next_run, schedule_updated_at, siteID, function() {
+				console.log("Subscription "+name+" saved!");
+				currentSubscription++;
+				if (currentSubscription == curSubscriptionCount) {
+					console.log("All subscriptions saved!");
+					document.getElementById("item subscription").innerHTML = "<h2>"+subscriptionCount+"</h2> subscriptions";
+					curSubscriptionCount = -curCurrentSite;
+					switchSite();
+				}
+			});
+		}
+	};
+	subscriptionXML.send();
+	
+}
+
 function initiliseStatsTiles() {
 		var statsContainer = document.createElement("div");
 		statsContainer.setAttribute('id','statsContainer');
@@ -441,6 +491,11 @@ function initiliseStatsTiles() {
 		taskCountDiv.setAttribute('id','item task');
 		taskCountDiv.innerHTML = "<h2>"+taskCount+"</h2> tasks"; 
 		statsContainer.appendChild(taskCountDiv);
+		var subscriptionCountDiv = document.createElement("div");
+		subscriptionCountDiv.setAttribute('class','item');
+		subscriptionCountDiv.setAttribute('id','item subscription');
+		subscriptionCountDiv.innerHTML = "<h2>"+subscriptionCount+"</h2> subscriptions"; 
+		statsContainer.appendChild(subscriptionCountDiv);
 		document.body.appendChild(statsContainer);
 		var container = document.querySelector('#statsContainer');
 		var iso = new Isotope( container );
