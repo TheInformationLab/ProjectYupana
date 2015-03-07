@@ -9,6 +9,7 @@ var curCurrentSite = 0;
 var sitesList = [];
 
 function checkAPIAccess() {
+	$('.ajax-loading').show();
 	console.log("Check API Access");
 	var loginXML = '<tsRequest><credentials name="'+ document.querySelector('#username').value + '" password="'+document.querySelector('#password').value+'" ><site contentUrl="" /></credentials></tsRequest>'
 	var loginResponse = new XMLHttpRequest();
@@ -66,6 +67,8 @@ function getSites_noAPI(){
 					tableauDB.fetchRecords(0,"sites", function(sites) {
 						sitesList = sites;
 						getUsers_noAPI();
+						initiliseStatsTiles();
+						document.getElementById("loadingMsg").innerHTML = "Getting Default Site";
 					});
 				}
 			});
@@ -185,6 +188,29 @@ function getWorkbooks() {
 			twbContainer.appendChild(twbItem);
 		}
 		document.body.appendChild(twbContainer);
+function initiliseStatsTiles() {
+		var statsContainer = document.createElement("div");
+		statsContainer.setAttribute('id','statsContainer');
+		document.body.appendChild(statsContainer);
+		var container = document.querySelector('#statsContainer');
+		var iso = new Isotope( container );
+		iso.arrange({
+			// options
+			itemSelector: '.item',
+			layoutMode: 'cellsByRow',
+			cellsByRow: {
+				containerStyle: null,
+				columnWidth: 210,
+				rowHeight: 60
+			}
+		});
+		iso.on('layoutComplete', function(){
+			document.querySelector('#statsContainer').style = 'static';
+			console.log("Stats Tile Layout Done!");
+		});
+}
+
+/* document.body.appendChild(twbContainer);
 		for (var i = 0, twb; twb = workbooks[i]; i++) {
 			var isoItem = document.getElementsByClassName('item')[i];
 			isoItem.addEventListener('click', function(e){
@@ -224,6 +250,7 @@ function getWorkbooks() {
 	};
 	twbXML.send(null);
 };
+		}); */
 
 function listUsers(){
 	var userContainer = document.createElement("div");

@@ -11,6 +11,17 @@ console.log("serverURL: "+serverURL);
 console.log("site: "+site);
 console.log("fullURL: "+fullURL);
 
+function initializeScreen(){
+	var loadingdiv = document.createElement("div");
+	loadingdiv.setAttribute('class','ajax-loading');
+	var loaddiv = document.createElement("div");
+	loaddiv.setAttribute('id','loadingMsg');
+	loadingdiv.appendChild(loaddiv);
+	document.body.appendChild(loadingdiv);
+
+	checkLoggedIn();
+}
+
 function checkLoggedIn() {
 	if (fullURL) {
 		console.log("Testing Logged in to Tableau Server: "+fullURL+"/projects.xml");
@@ -250,6 +261,7 @@ function switchSite(site){
 };
 
 checkLoggedIn();
+initializeScreen();
 
 //Add Listeners to Login Page
 //document.addEventListener('DOMContentLoaded', function () {
