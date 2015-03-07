@@ -51,13 +51,13 @@ var tableauDB = (function () {
 					keyPath : 'siteID'
 				});
 			var store = db.createObjectStore('users', {
-					keyPath : 'userID'
+					keyPath : 'name'
 				});
 			var store = db.createObjectStore('projects', {
 					keyPath : 'projID'
 				});
 			var store = db.createObjectStore('workbooks', {
-					keyPath : 'wrkID'
+					keyPath : 'workbookID'
 				});
 			var store = db.createObjectStore('views', {
 					keyPath : 'viewID'
@@ -69,7 +69,7 @@ var tableauDB = (function () {
 					keyPath : 'grpID'
 				});
 			var store = db.createObjectStore('datasources', {
-					keyPath : 'dsID'
+					keyPath : 'dataID'
 				});
 			var store = db.createObjectStore('tasks', {
 					keyPath : 'taskID'
@@ -227,7 +227,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new user
 	*/
-	tDB.createUser = function (userID, name, friendly_name, email, licensing_level, administrator, admin_type, publisher, raw_data_suppressor, callback) {
+	tDB.createUser = function (name, friendly_name, email, licensing_level, administrator, admin_type, publisher, raw_data_suppressor, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -239,7 +239,6 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var user = {
-			'userID' : userID,
 			'name' : name,
 			'friendly_name' : friendly_name,
 			'email' : email,
