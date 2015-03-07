@@ -3,8 +3,16 @@ var apiLevel = 0;
 var siteCount = 0;
 var userCount = 0;
 var viewCount = 0;
+var workbookCount = 0;
+var projCount = 0;
+var dataCount = 0;
+var taskCount = 0;
 var curUserCount = 0;
 var curViewCount = 0;
+var curWorkbookCount = 0;
+var curProjCount = 0;
+var curDataCount = 0;
+var curTaskCount = 0;
 var curCurrentSite = 0;
 var sitesList = [];
 
