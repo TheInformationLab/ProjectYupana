@@ -287,6 +287,43 @@ function getWorkbooks_noAPI() {
 			twbContainer.appendChild(twbItem);
 		}
 		document.body.appendChild(twbContainer);
+function getDataSources_noAPI() {
+	console.log("Getting Data Sources");
+	var dataXML = new XMLHttpRequest();
+	dataXML.open(
+		"GET",
+		fullURL+"/datasources.xml",
+		true);
+	dataXML.onload = function() {
+		datasources = dataXML.responseXML.getElementsByTagName("datasource");
+		curDataCount = datasources.length;
+		dataCount = dataCount + curDataCount;
+		currentData = 0;
+		if (datasources.length == 0) {
+			curDataCount = -curCurrentSite;
+			switchSite();
+		}
+		for (var i = 0, dataS; dataS = datasources[i]; i++) {
+			var dataID = dataS.getElementsByTagName("id")[0].innerHTML;
+			var name = dataS.getElementsByTagName("name")[0].innerHTML;
+			var repository_url = dataS.getElementsByTagName("repository-url")[0].innerHTML;
+			var ownerID = dataS.getElementsByTagName("owner_id")[0].innerHTML;		
+			var siteID = sitesList[curCurrentSite].siteID;
+			tableauDB.createDataSource(dataID, name, repository_url, ownerID, siteID, function() {
+				console.log("Data Source "+name+" saved!");
+				currentData++;
+				if (currentData == curDataCount) {
+					console.log("All datasources saved!");
+					document.getElementById("item datasource").innerHTML = "<h2>"+dataCount+"</h2> data sources";
+					curDataCount = -curCurrentSite;
+					switchSite();
+				}
+			});
+		}
+	};
+	dataXML.send();
+	
+}
 function initiliseStatsTiles() {
 		var statsContainer = document.createElement("div");
 		statsContainer.setAttribute('id','statsContainer');
