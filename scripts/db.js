@@ -417,7 +417,50 @@ var tableauDB = (function () {
 		request.onerror = tDB.onerror;
 	};
 	
+	/**
+	 * Create a new task
+	*/
+	tDB.createTask= function (taskID, type, priority, targetID, targetName, targetType, scheduleID, scheduleName, schedulePriority,
+								 scheduleEnabled, schedule_next_run, schedule_updated_at, siteID, callback) {
+		// Get a reference to the db.
+		var db = datastore;
 
+		// Initiate a new transaction.
+		var transaction = db.transaction(['tasks'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('tasks');
+
+		// Create an object for the todo item.
+		var task = {
+			'taskID' : taskID,
+			'type' : type,
+			'priority' : priority,
+			'targetID' : targetID,
+			'targetName' : targetName,
+			'targetType' : targetType,
+			'scheduleID' : scheduleID,
+			'scheduleName' : scheduleName,
+			'schedulePriority' : schedulePriority,
+			'scheduleEnabled' : scheduleEnabled,
+			'schedule_next_run' : schedule_next_run,
+			'schedule_updated_at' : schedule_updated_at,
+			'siteID' : siteID
+		};
+
+		// Create the datastore request.
+		var request = objStore.put(task);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(task);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+	
 	/**
 	 * Create a new group
 	 */
