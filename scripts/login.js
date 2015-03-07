@@ -39,6 +39,7 @@ function checkLoggedIn() {
 				serURL.setAttribute('id','serURL');
 				serURL.setAttribute('type','text');
 				serURL.setAttribute('value','https://beta.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
+				serURL.setAttribute('value','https://tableauserver.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
 				var urlSubmit = document.createElement("button");
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
@@ -59,6 +60,7 @@ function checkLoggedIn() {
 				serURL.setAttribute('id','serURL');
 				serURL.setAttribute('type','text');
 				serURL.setAttribute('value','https://beta.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
+				serURL.setAttribute('value','https://tableauserver.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
 				var urlSubmit = document.createElement("button");
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
@@ -82,11 +84,13 @@ function serURLSubmit(){
 	//chrome.storage.sync["serverURL"] = serverURL;
 	
 	//Get auth.xml
+	//Get auth xml
 	console.log("serURLSubmit: getting auth xml");
 	var authXML = new XMLHttpRequest();
 	authXML.open(
 		"GET",
 		serverURL+"/auth.xml",
+		serverURL+"/manual/auth?format=xml",
 		true);
 	console.log("serURLSubmit: authXML.onload going to readAuth()");
 	authXML.onload = function(){
@@ -127,6 +131,7 @@ function loginUser(site, callback){
 	authXML.open(
 		"GET",
 		serverURL+"/auth.xml",
+		serverURL+"/manual/auth?format=xml",
 		true);
 	console.log("LoginUser: authXML.onload going to readAuth()");
 	authXML.onload = function(){
@@ -146,12 +151,14 @@ function loginUser(site, callback){
 			data.append('target_site',site);
 		}
 		data.append('username', document.querySelector('#username').value);
+		data.append('format', "xml");
 		console.log(document.querySelector('#username').value);
 		console.log("Site " + site);
 		var loginXML = new XMLHttpRequest();
 		loginXML.open(
 			"POST",
 			serverURL+"/auth/login.xml",
+			serverURL+"/auth/login",
 			true);
 		loginXML.onload = function(){
 			var sites = loginXML.responseXML.getElementsByTagName("site");
@@ -192,14 +199,17 @@ function loginUser(site, callback){
 };
 
 function switchSite(site){
+function switchSiteLogin(site){
 	console.log("Switching Site"); 
 	password = document.querySelector('#password').value;
 	var authXML = new XMLHttpRequest();
 	authXML.open(
 		"GET",
 		serverURL+"/auth.xml",
+		serverURL+"/manual/auth?format=xml",
 		true);
 	console.log("LoginUser: authXML.onload going to readAuth()");
+	console.log("switchSiteLogin: authXML.onload going to readAuth()");
 	authXML.onload = function(){
 		modulus = authXML.responseXML.getElementsByTagName("modulus")[0].innerHTML;
 		exponent = authXML.responseXML.getElementsByTagName("exponent")[0].innerHTML;
@@ -223,6 +233,7 @@ function switchSite(site){
 		loginXML.open(
 			"POST",
 			serverURL+"/auth/login.xml",
+			serverURL+"/auth/login",
 			true);
 		loginXML.onload = function(){
 			var sites = loginXML.responseXML.getElementsByTagName("site");
@@ -233,6 +244,7 @@ function switchSite(site){
 				document.querySelector('#username').hidden = true;
 				document.querySelector('#password').hidden = true;
 				tableauDB.open(getUsers_noAPI);
+				getServerElements_noAPI();
 			} else if (sites.length > 0 && !site) {
 				console.log("Fresh Login, going to default site")
 				var defaultSiteID = sites[0].getAttribute("id");
@@ -244,6 +256,7 @@ function switchSite(site){
 				}
 				siteSelected = true;
 				loginUser(defaultSiteID);
+				switchSiteLogin(defaultSiteID);
 			} else if (site) {
 				console.log("Logging into site "+site);
 				if (site.length > 0) {
@@ -251,6 +264,7 @@ function switchSite(site){
 					siteSelected = true;
 				} 
 				loginUser(site);
+				switchSiteLogin(site);
 			} else {
 				console.log("Error logging in");
 				console.log(this.response);
