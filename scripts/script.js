@@ -133,6 +133,13 @@ function switchSite() {
 		document.getElementById("loadingMsg").hidden = true;
 	}
 }
+
+function logIntoNextSite(siteNameSpace) {
+	console.log("Logged out, moving to "+siteNameSpace);
+	console.log(sitesList);
+	document.getElementById("loadingMsg").innerHTML = "Getting " + sitesList[curCurrentSite].friendlyName;
+	switchSiteLogin(siteNameSpace);
+}
 function getUsers_noAPI() {
 	console.log("Getting User List");
 	var usersXML = new XMLHttpRequest();
