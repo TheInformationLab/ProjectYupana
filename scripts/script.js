@@ -140,6 +140,16 @@ function logIntoNextSite(siteNameSpace) {
 	document.getElementById("loadingMsg").innerHTML = "Getting " + sitesList[curCurrentSite].friendlyName;
 	switchSiteLogin(siteNameSpace);
 }
+
+function getServerElements_noAPI() {
+	getUsers_noAPI();
+	getViews_noAPI();
+	getWorkbooks_noAPI();
+	getProjects_noAPI();
+	getDataSources_noAPI();
+	getTasks_noAPI();
+}
+
 function getUsers_noAPI() {
 	console.log("Getting User List");
 	var usersXML = new XMLHttpRequest();
