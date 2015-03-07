@@ -108,6 +108,31 @@ function getSites_noAPI(){
 	};
 	sitesXML.send();
 }
+
+function switchSite() {
+	if (curCurrentSite < siteCount - 1 && curUserCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curDataCount == -curCurrentSite
+		&& curTaskCount == -curCurrentSite){
+		curCurrentSite++;
+		try {
+			countUsers();
+			logoutCall = new XMLHttpRequest();
+			logoutCall.open("GET",serverURL+"/auth/logout", true);
+			logoutCall.onload = logIntoNextSite(sitesList[curCurrentSite].namespaceURL);
+			logoutCall.send(null);
+		}
+		catch(err){
+			console.log(err.message);
+			console.log("Site number: "+ curCurrentSite);
+			console.log(sitesList[curCurrentSite]);
+		}
+	} else if (curCurrentSite == siteCount - 1 && curUserCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curDataCount == -curCurrentSite
+				&& curTaskCount == -curCurrentSite) {
+		console.log("FINISHED LOADING!!");
+		countUsers();
+		$('.ajax-loading').hide();
+		document.getElementById("loadingMsg").hidden = true;
+	}
+}
 function getUsers_noAPI() {
 	console.log("Getting User List");
 	var usersXML = new XMLHttpRequest();
