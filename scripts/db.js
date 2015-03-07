@@ -345,6 +345,43 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
+	
+	/**
+	 * Create a new project
+	*/
+	tDB.createProject = function (projID, name, updated_at, created_at, ownerID, siteID, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['projects'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('projects');
+
+		// Create an object for the todo item.
+		var project = {
+			'projID' : projID,
+			'name' : name,
+			'updated-at' : updated_at,
+			'created-at' : created_at,
+			'ownerID' : ownerID,
+			'siteID' : siteID
+		};
+
+		// Create the datastore request.
+		var request = objStore.put(project);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(project);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+	
 
 	/**
 	 * Create a new group
