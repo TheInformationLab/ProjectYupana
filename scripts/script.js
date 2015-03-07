@@ -150,6 +150,12 @@ function getServerElements_noAPI() {
 	getTasks_noAPI();
 }
 
+function countUsers() {
+	tableauDB.fetchRecords(0,"users", function(users) {
+		document.getElementById("item user").innerHTML = "<h2>"+users.length+"</h2> users"
+	});
+}
+
 function getUsers_noAPI() {
 	console.log("Getting User List");
 	var usersXML = new XMLHttpRequest();
