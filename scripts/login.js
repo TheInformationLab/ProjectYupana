@@ -78,6 +78,7 @@ function serURLSubmit(){
 	
 	//Set serverURL variable
 	serverURL = document.querySelector('#serURL').value;
+	getServerLogo();
 	//chrome.storage.sync["serverURL"] = serverURL;
 	
 	//Get auth.xml
