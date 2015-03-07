@@ -382,6 +382,41 @@ var tableauDB = (function () {
 		request.onerror = tDB.onerror;
 	};
 	
+	/**
+	 * Create a new data source
+	*/
+	tDB.createDataSource = function (dataID, name, repository_url, ownerID, siteID, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['datasources'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('datasources');
+
+		// Create an object for the todo item.
+		var datasource = {
+			'dataID' : dataID,
+			'name' : name,
+			'repository-url' : repository_url,
+			'ownerID' : ownerID,
+			'siteID' : siteID
+		};
+
+		// Create the datastore request.
+		var request = objStore.put(datasource);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(datasource);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+	
 
 	/**
 	 * Create a new group
