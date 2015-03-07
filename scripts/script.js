@@ -277,6 +277,34 @@ function getWorkbooks_noAPI() {
 	workbookXML.send(null);
 };
 
+function getProjects_noAPI() {
+	console.log("Getting Projects");
+	var projectsXML = new XMLHttpRequest();
+	projectsXML.open(
+		"GET",
+		fullURL+"/projects.xml",
+		true);
+	projectsXML.onload = function() {
+		projects = projectsXML.responseXML.getElementsByTagName("project");
+		curProjCount = projects.length;
+		projCount = projCount + curProjCount;
+		currentProj = 0;
+		for (var i = 0, view; view = projects[i]; i++) {
+			var projID = view.getElementsByTagName("id")[0].innerHTML;
+			var name = view.getElementsByTagName("name")[0].innerHTML;
+			var updated_at = view.getElementsByTagName("updated-at")[0].innerHTML;
+			var created_at = view.getElementsByTagName("created-at")[0].innerHTML;
+			var ownerID = view.getElementsByTagName("owner")[0].getElementsByTagName("id")[0].innerHTML;
+			var siteID = sitesList[curCurrentSite].siteID;
+			tableauDB.createProject(projID, name, updated_at, created_at, ownerID, siteID, function() {
+				console.log("Project "+name+" saved!");
+				currentProj++;
+				if (currentProj == curProjCount) {
+					console.log("All projects saved!");
+					document.getElementById("item project").innerHTML = "<h2>"+projCount+"</h2> projects";
+					curProjCount = -curCurrentSite;
+					switchSite();
+				}
 			});
 			var twbItem = document.createElement("div");
 			twbItem.setAttribute('class','item');
@@ -287,6 +315,11 @@ function getWorkbooks_noAPI() {
 			twbContainer.appendChild(twbItem);
 		}
 		document.body.appendChild(twbContainer);
+	};
+	projectsXML.send();
+	
+}
+
 function getDataSources_noAPI() {
 	console.log("Getting Data Sources");
 	var dataXML = new XMLHttpRequest();
