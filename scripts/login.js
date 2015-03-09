@@ -33,8 +33,8 @@ function checkLoggedIn() {
 		req.onload = function() {
 			if (this.status == "401") {
 				console.log("User not logged in");
-				var div_serverURL = document.createElement("div");
-				div_serverURL.setAttribute('id','serverURL');
+				var div_serverLogin = document.createElement("div");
+				div_serverLogin.setAttribute('id','serverLogin');
 				var serURL = document.createElement("input");
 				serURL.setAttribute('id','serURL');
 				serURL.setAttribute('type','text');
@@ -43,9 +43,9 @@ function checkLoggedIn() {
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
 				urlSubmit.addEventListener('click', serURLSubmit);
-				div_serverURL.appendChild(serURL);
-				div_serverURL.appendChild(urlSubmit);
-				document.body.appendChild(div_serverURL);
+				div_serverLogin.appendChild(serURL);
+				div_serverLogin.appendChild(urlSubmit);
+				document.body.appendChild(div_serverLogin);
 			} else {
 				tableauDB.open(getWorkbooks);
 			}
@@ -53,8 +53,8 @@ function checkLoggedIn() {
 		req.send(null);
 	} else {
 				console.log("User not logged in");
-				var div_serverURL = document.createElement("div");
-				div_serverURL.setAttribute('id','serverURL');
+				var div_serverLogin = document.createElement("div");
+				div_serverLogin.setAttribute('id','serverLogin');
 				var serURL = document.createElement("input");
 				serURL.setAttribute('id','serURL');
 				serURL.setAttribute('type','text');
@@ -63,9 +63,9 @@ function checkLoggedIn() {
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
 				urlSubmit.addEventListener('click', serURLSubmit);
-				div_serverURL.appendChild(serURL);
-				div_serverURL.appendChild(urlSubmit);
-				document.body.appendChild(div_serverURL);
+				div_serverLogin.appendChild(serURL);
+				div_serverLogin.appendChild(urlSubmit);
+				document.body.appendChild(div_serverLogin);
 			}
 };	
 
@@ -99,21 +99,39 @@ function serURLSubmit(){
 		console.log(exponent);
 		console.log(authenticity);
 		//Show username & password form
+		var div_serverLogin = document.getElementById("serverLogin");
 		var userField = document.createElement("input");
 		userField.setAttribute('id','username');
 		userField.setAttribute('type','text');
+		userField.setAttribute('value','Username');
+		userField.setAttribute('style','color:#BDBDBD;font-style: italic;');
 		var passField = document.createElement("input");
 		passField.setAttribute('id','password');
-		passField.setAttribute('type','password'); 
+		passField.setAttribute('type','text'); 
+		passField.setAttribute('value','Password'); 
+		passField.setAttribute('style','color:#BDBDBD;font-style: italic;');
 		var loginBtn = document.createElement("button");
 		loginBtn.setAttribute('id','login');
 		loginBtn.innerHTML = "Login";
 		loginBtn.addEventListener('click', function(){
 			loginUser();
 		}, false);
-		document.body.appendChild(userField);
-		document.body.appendChild(passField);
-		document.body.appendChild(loginBtn);
+		userField.addEventListener('click', function(){
+			if (userField.value=="Username") {
+				userField.value="";
+				userField.setAttribute('style','');
+			}
+		}, false);
+		passField.addEventListener('click', function(){
+			if (passField.value=="Password") {
+				passField.setAttribute('type','password'); 
+				passField.value="";
+				passField.setAttribute('style','');
+			}
+		}, false);
+		div_serverLogin.appendChild(userField);
+		div_serverLogin.appendChild(passField);
+		div_serverLogin.appendChild(loginBtn);
 	};
 	authXML.send(null);
 	console.log("serURLSubmit: complete");
@@ -159,7 +177,7 @@ function loginUser(site, callback){
 			var user = loginXML.responseXML.getElementsByTagName("user");
 			if (user.length > 0) {
 				console.log("Login Successful");
-				document.querySelector('#serverURL').hidden = true;
+				document.querySelector('#serverLogin').hidden = true;
 				document.querySelector('#username').hidden = true;
 				document.querySelector('#password').hidden = true;
 				deleteDB('tableau');
@@ -231,7 +249,7 @@ function switchSiteLogin(site){
 			var user = loginXML.responseXML.getElementsByTagName("user");
 			if (user.length > 0) {
 				console.log("Login Successful");
-				document.querySelector('#serverURL').hidden = true;
+				document.querySelector('#serverLogin').hidden = true;
 				document.querySelector('#username').hidden = true;
 				document.querySelector('#password').hidden = true;
 				getServerElements_noAPI();
