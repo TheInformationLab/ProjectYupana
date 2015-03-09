@@ -116,13 +116,13 @@ function serURLSubmit(){
 		loginBtn.addEventListener('click', function(){
 			loginUser();
 		}, false);
-		userField.addEventListener('click', function(){
+		userField.addEventListener('focusin', function(){
 			if (userField.value=="Username") {
 				userField.value="";
 				userField.setAttribute('style','');
 			}
 		}, false);
-		passField.addEventListener('click', function(){
+		passField.addEventListener('focusin', function(){
 			if (passField.value=="Password") {
 				passField.setAttribute('type','password'); 
 				passField.value="";
