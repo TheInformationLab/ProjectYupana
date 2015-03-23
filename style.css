@@ -123,18 +123,20 @@ div.ajax-loading {
 	height:50px;
 	border-bottom: 3px solid #E97D32;
 	background-color:#FFF;
+	margin-bottom: 10px;
  }
 
 .item:hover{
   cursor: pointer;
+  border-bottom: 3px solid #0194FE;
 }
 
-.selectedItem{
-	width: 200px;
-	height:50px;
-	border-bottom: 3px solid #F0F0F0;
-	background-color:#000;
-	color: #FFF;
+.selectSites{
+	width: 500px;
+	height:200px;
+	border-bottom: 3px solid #0194FE;
+	background-color:#FFF;
+	  margin-bottom: 49px;
 }
 
 #userContainer{
