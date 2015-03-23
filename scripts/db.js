@@ -3,14 +3,13 @@ var tableauDB = (function () {
 	var datastore = null;
 
 	tDB.open = function (callback) {
-		// Database version.
-		var version = 1;
 
 		// Open a connection to the datastore.
-		var request = indexedDB.open('tableau', version);
+		var request = indexedDB.open('tableau', 3);
 
 		// Handle datastore upgrades.
 		request.onupgradeneeded = function (e) {
+			console.log("Upgrading Database")
 			var db = e.target.result;
 
 			e.target.transaction.onerror = tDB.onerror;
@@ -50,33 +49,69 @@ var tableauDB = (function () {
 			var store = db.createObjectStore('sites', {
 					keyPath : 'siteID'
 				});
+			store.createIndex("friendlyName","friendlyName",{unique:false});
 			var store = db.createObjectStore('users', {
 					keyPath : 'name'
 				});
+			store.createIndex("friendly_name","friendly_name",{unique:false});
+			store.createIndex("admin_type","admin_type",{unique:false});
+			store.createIndex("administrator","administrator",{unique:false});
+			store.createIndex("licensing_level","licensing_level",{unique:false});
+			store.createIndex("publisher","publisher",{unique:false});
 			var store = db.createObjectStore('projects', {
 					keyPath : 'projID'
 				});
+			store.createIndex("siteID","siteID",{unique:false});
+			store.createIndex("name","name",{unique:false});
+			store.createIndex("ownerID","ownerID",{unique:false});
+			store.createIndex("projID","projID",{unique:false});
 			var store = db.createObjectStore('workbooks', {
 					keyPath : 'workbookID'
 				});
+			store.createIndex("siteID","siteID",{unique:false});
+			store.createIndex("name","name",{unique:false});
+			store.createIndex("ownerID","ownerID",{unique:false});
+			store.createIndex("projectID","projectID",{unique:false});
 			var store = db.createObjectStore('views', {
 					keyPath : 'viewID'
 				});
+			store.createIndex("name","name",{unique:false});
+			store.createIndex("ownerID","ownerID",{unique:false});
+			store.createIndex("siteID","siteID",{unique:false});
+			store.createIndex("title","title",{unique:false});
+			//store.createIndex("workbook_url","workbook-url",{unique:false});
 			var store = db.createObjectStore('dataconnections', {
 					keyPath : 'dconnID'
 				});
 			var store = db.createObjectStore('groups', {
 					keyPath : 'groupID'
 				});
+			store.createIndex("name","name",{unique:false});
+			store.createIndex("siteID","siteID",{unique:false});
 			var store = db.createObjectStore('datasources', {
 					keyPath : 'dataID'
 				});
+			store.createIndex("siteID","siteID",{unique:false});
+			store.createIndex("name","name",{unique:false});
+			store.createIndex("ownerID","ownerID",{unique:false});
 			var store = db.createObjectStore('tasks', {
 					keyPath : 'taskID'
 				});
+			store.createIndex("siteID","siteID",{unique:false});
+			store.createIndex("scheduleName","scheduleName",{unique:false});
+			store.createIndex("targetID","targetID",{unique:false});
+			store.createIndex("targetName","targetName",{unique:false});
+			store.createIndex("targetType","targetType",{unique:false});
+			store.createIndex("type","type",{unique:false});
 			var store = db.createObjectStore('subscriptions', {
 					keyPath : 'subscriptionID'
 				});
+			store.createIndex("siteID","siteID",{unique:false});
+			store.createIndex("scheduleName","scheduleName",{unique:false});
+			store.createIndex("subject","subject",{unique:false});
+			store.createIndex("userEmail","userEmail",{unique:false});
+			store.createIndex("userID","userID",{unique:false});
+			store.createIndex("userName","userName",{unique:false});
 		};
 
 		// Handle successful datastore access.
