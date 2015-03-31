@@ -244,7 +244,7 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('sites');
 
 		var site = {
-			'siteID' : siteID,
+			'siteID' : parseInt(siteID),
 			'friendlyName' : friendlyname,
 			'namespaceURL' : namespaceURL,
 			'user_quota' : user_quota,
@@ -318,10 +318,10 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var group = {
-			'groupID' : groupID,
+			'groupID' : parseInt(groupID),
 			'name' : name,
 			'domain' : domain,
-			'siteID' : siteID
+			'siteID' : parseInt(siteID)
 		};
 
 		// Create the datastore request.
@@ -352,7 +352,7 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var view = {
-			'viewID' : viewID,
+			'viewID' : parseInt(viewID),
 			'name' : name,
 			'title' : title,
 			'index' : index,
@@ -360,10 +360,10 @@ var tableauDB = (function () {
 			'preview-url' : preview_url,
 			'updated-at' : updated_at,
 			'created-at' : created_at,
-			'ownerID' : ownerID,
+			'ownerID' : parseInt(ownerID),
 			'workbook-url' : workbook_url,
-			'customized-view-count' : customized_view_count,
-			'siteID' : siteID
+			'customized-view-count' : parseInt(customized_view_count),
+			'siteID' : parseInt(siteID)
 		};
 
 		// Create the datastore request.
@@ -394,18 +394,18 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var workbook = {
-			'workbookID' : workbookID,
+			'workbookID' : parseInt(workbookID),
 			'name' : name,
 			'size' : size,
 			'path' : path,
-			'ownerID' : ownerID,
-			'projectID' : projectID,
+			'ownerID' : parseInt(ownerID),
+			'projectID' : parseInt(projectID),
 			'tasks-count' : tasks_count,
 			'updated-at' : updated_at,
 			'created-at' : created_at,
 			'repository-url' : repository_url,
 			'tabs-allowed' : tabs_allowed,
-			'siteID' : siteID
+			'siteID' : parseInt(siteID)
 		};
 
 		// Create the datastore request.
@@ -436,12 +436,12 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var project = {
-			'projID' : projID,
+			'projID' : parseInt(projID),
 			'name' : name,
 			'updated-at' : updated_at,
 			'created-at' : created_at,
-			'ownerID' : ownerID,
-			'siteID' : siteID
+			'ownerID' : parseInt(ownerID),
+			'siteID' : parseInt(siteID)
 		};
 
 		// Create the datastore request.
@@ -472,11 +472,11 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var datasource = {
-			'dataID' : dataID,
+			'dataID' : parseInt(dataID),
 			'name' : name,
 			'repository-url' : repository_url,
-			'ownerID' : ownerID,
-			'siteID' : siteID
+			'ownerID' : parseInt(ownerID),
+			'siteID' : parseInt(siteID)
 		};
 
 		// Create the datastore request.
@@ -508,19 +508,19 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var task = {
-			'taskID' : taskID,
+			'taskID' : parseInt(taskID),
 			'type' : type,
 			'priority' : priority,
-			'targetID' : targetID,
+			'targetID' : parseInt(targetID),
 			'targetName' : targetName,
 			'targetType' : targetType,
-			'scheduleID' : scheduleID,
+			'scheduleID' : parseInt(scheduleID),
 			'scheduleName' : scheduleName,
 			'schedulePriority' : schedulePriority,
 			'scheduleEnabled' : scheduleEnabled,
 			'schedule_next_run' : schedule_next_run,
 			'schedule_updated_at' : schedule_updated_at,
-			'siteID' : siteID
+			'siteID' : parseInt(siteID)
 		};
 
 		// Create the datastore request.
@@ -553,18 +553,18 @@ var tableauDB = (function () {
 
 		// Create an object for the todo item.
 		var subscription = {
-			'subscriptionID' : subscriptionID,
+			'subscriptionID' : parseInt(subscriptionID),
 			'subject' : subject,
-			'userID' : userID,
+			'userID' : parseInt(userID),
 			'userName' : userName,
 			'userEmail' : userEmail,
-			'scheduleID' : scheduleID,
+			'scheduleID' : parseInt(scheduleID),
 			'scheduleName' : scheduleName,
 			'schedulePriority' : schedulePriority,
 			'scheduleEnabled' : scheduleEnabled,
 			'schedule_next_run' : schedule_next_run,
 			'schedule_updated_at' : schedule_updated_at,
-			'siteID' : siteID
+			'siteID' : parseInt(siteID)
 		};
 
 		// Create the datastore request.
