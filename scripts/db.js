@@ -5,7 +5,7 @@ var tableauDB = (function () {
 	tDB.open = function (callback) {
 
 		// Open a connection to the datastore.
-		var request = indexedDB.open('tableau', 3);
+		var request = indexedDB.open('tableau', 7);
 
 		// Handle datastore upgrades.
 		request.onupgradeneeded = function (e) {
@@ -44,6 +44,9 @@ var tableauDB = (function () {
 			}
 			if (db.objectStoreNames.contains('subscriptions')) {
 				db.deleteObjectStore('subscriptions');
+			}
+			if (db.objectStoreNames.contains('sitestats')) {
+				db.deleteObjectStore('sitestats');
 			}
 			// Create a new datastore.
 			var store = db.createObjectStore('sites', {
@@ -112,6 +115,13 @@ var tableauDB = (function () {
 			store.createIndex("userEmail","userEmail",{unique:false});
 			store.createIndex("userID","userID",{unique:false});
 			store.createIndex("userName","userName",{unique:false});
+			var store = db.createObjectStore('sitestats', {
+					autoIncrement: true
+				});
+			store.createIndex("friendlyname","friendlyName",{unique:false});
+			store.createIndex("siteID","siteID",{unique:false});
+			store.createIndex("table","table",{unique:false});
+			store.createIndex("StatValue",["siteID","table"],{unique:true});
 		};
 
 		// Handle successful datastore access.
@@ -141,7 +151,7 @@ var tableauDB = (function () {
 			callback(count.result);
 		};		
 	}
-	
+		
 	
 
 	/**
@@ -178,7 +188,7 @@ var tableauDB = (function () {
 
 			result.continue();
 		};
-
+	
 		cursorRequest.onerror = tDB.onerror;
 	};
 
@@ -573,28 +583,79 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-
+	
 	/**
-	 * Delete a todo item.
-	 * @param {int} id The timestamp (id) of the todo item to be deleted.
-	 * @param {function} callback A callback function that will be executed if the
-	 *                            delete is successful.
-	 */
-	tDB.deleteUser = function (id, callback) {
+	 * Create a new site stat
+	*/
+	tDB.createSiteStat = function (siteID, friendlyname, table, value, callback) {
+		// Get a reference to the db.
 		var db = datastore;
-		var transaction = db.transaction(['todo'], 'readwrite');
-		var objStore = transaction.objectStore('todo');
 
-		var request = objStore.delete(id);
+		// Initiate a new transaction.
+		var transaction = db.transaction(['sitestats'], 'readwrite');
 
+		// Get the datastore.
+		var objStore = transaction.objectStore('sitestats');
+
+		var site = {
+			'siteID' : parseInt(siteID),
+			'friendlyName' : friendlyname,
+			'table' : table,
+			'count' : parseInt(value)
+		};
+
+		// Create the datastore request.
+		var request = objStore.put(site);
+
+		// Handle a successful datastore put.
 		request.onsuccess = function (e) {
-			callback();
-		}
+			// Execute the callback function.
+			callback(site);
+		};
 
-		request.onerror = function (e) {
-			console.log(e);
-		}
+		// Handle errors.
+		request.onerror = tDB.onerror;
 	};
+	
+	tDB.countRecords = function (tables, siteID, callback) {
+		var result = [];
+		var table = "";
+		for (i = 0, table; table = tables[i]; i++){
+			tDB.doCount(table,parseInt(siteID),function(count){
+				result[i]=count;
+			});
+		}
+	}
+	
+    tDB.doCount = function (table, siteID, siteName, callback) {
+		var db = datastore;
+		//console.log(table);
+		var transaction = db.transaction([table],"readonly");
+		var count = 0;
+			
+		transaction.oncomplete = function(event) {
+			callback(table, siteID, siteName, count);
+		};
+	 
+		var handleResult = function(event) {  
+			var cursor = event.target.result;  
+			if (cursor) {  
+				count = count + 1;
+				cursor.continue();  
+			  }  
+		};
+	 
+			var objectStore = transaction.objectStore(table);
+	 
+			if(siteID) {
+				var range = IDBKeyRange.only(siteID);
+				var index = objectStore.index("siteID");
+				index.openCursor(range).onsuccess = handleResult;
+			} else {
+				
+				objectStore.openCursor().onsuccess = handleResult;
+			}
+	}
 
 	// Export the tDB object.
 	return tDB;
