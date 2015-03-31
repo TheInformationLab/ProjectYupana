@@ -188,35 +188,31 @@ var tableauDB = (function () {
 
 			result.continue();
 		};
-	
+
 		cursorRequest.onerror = tDB.onerror;
 	};
-
+	
 	/**
-	 * Fetch all of the workbooks in the datastore.
-	 * @param {function} callback A function that will be executed once the items
-	 *                            have been retrieved. Will be passed a param with
-	 *                            an array of the users.
+	 * Fetch all of the values or one specific record from a table based on a specific index
 	 */
-	tDB.fetchWorkbooks = function (twbID, callback) {
+	tDB.fetchIndexRecords = function (statName, table, indexName, callback) {
 		var db = datastore;
-		var transaction = db.transaction(['workbooks'], 'readwrite');
-		var objStore = transaction.objectStore('workbooks');
-		var twbInt = parseInt(twbID);
-		console.log("Fetching workbook: " + twbInt);
-		if (twbInt > 0) {
-			var keyRange = IDBKeyRange.only(twbID);
+		var transaction = db.transaction([table], 'readonly');
+		var objStore = transaction.objectStore(table);
+		var index = objStore.index(indexName);
+		//console.log("Fetinging user: " + userID);
+		if (statName) {
+			var keyRange = IDBKeyRange.only(statName);
 		} else {
 			var keyRange = IDBKeyRange.lowerBound(0);
 		}
-		var cursorRequest = objStore.openCursor(keyRange);
+		var cursorRequest = index.openCursor(keyRange);
 
-		var workbooks = [];
+		var records = [];
 
 		transaction.oncomplete = function (e) {
 			// Execute the callback function.
-			console.log(workbooks);
-			callback(workbooks);
+			callback(records);
 		};
 
 		cursorRequest.onsuccess = function (e) {
@@ -226,14 +222,14 @@ var tableauDB = (function () {
 				return;
 			}
 
-			workbooks.push(result.value);
+			records.push(result.value);
 
 			result.continue();
 		};
 
 		cursorRequest.onerror = tDB.onerror;
 	};
-	
+
 	/**
 	 * Create a new site
 	*/
