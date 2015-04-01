@@ -579,14 +579,14 @@ function initiliseStatsTiles() {
 		});
 }
 function drawDashboard(stats) {
-
 	var ndx = crossfilter(stats);
 	var siteDim = ndx.dimension(function(d) {return d.friendlyName});
 	var countMeasure = siteDim.group().reduceSum(function(d) {return d.count});
 	var chartTitle = document.createElement("h4");
 	chartTitle.innerHTML = "Workbooks";
 	var dashboardDiv = document.createElement("div");
-	dashboardDiv.setAttribute('id','dashboard');
+	dashboardDiv.setAttribute('id','item dashboard');
+	dashboardDiv.setAttribute('class','item');
 	dashboardDiv.appendChild(chartTitle);
 	statsContainer.appendChild(dashboardDiv);
 	var statsbarchart = dc.rowChart("#dashboard");
@@ -607,4 +607,20 @@ function drawDashboard(stats) {
 	statsbarchart.labelOffsetY(18);
 	statsbarchart.ordering(function(d){return -d.value});
 	dc.renderAll();
+	var container = document.querySelector('#statsContainer');
+	var iso = new Isotope( container );
+	iso.arrange({
+		// options
+		itemSelector: '.item',
+		layoutMode: 'cellsByRow',
+		cellsByRow: {
+			containerStyle: null,
+			columnWidth: 210,
+			rowHeight: 60
+		}
+	});
+	iso.on('layoutComplete', function(){
+		document.querySelector('#statsContainer').style = 'static';
+		console.log("Stats Tile Layout Done!");
+	});
 }
