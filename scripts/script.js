@@ -577,6 +577,11 @@ function initiliseStatsTiles() {
 			document.querySelector('#statsContainer').style = 'static';
 			console.log("Stats Tile Layout Done!");
 		});
+		siteCountDiv.addEventListener('click', function(e){
+			this.className = 'selectSites';
+			//Fill with sites list
+			iso.layout();
+		});
 }
 function drawDashboard(stats) {
 	var ndx = crossfilter(stats);
