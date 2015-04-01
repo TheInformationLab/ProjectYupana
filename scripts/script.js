@@ -1,24 +1,5 @@
-var apiToken = "";
-var apiLevel = 0;
-var siteCount = 0;
-var userCount = 0;
-var groupCount = 0;
-var viewCount = 0;
-var workbookCount = 0;
-var projCount = 0;
-var dataCount = 0;
-var taskCount = 0;
-var subscriptionCount = 0;
-var curUserCount = 0;
-var curGroupCount = 0;
-var curViewCount = 0;
-var curWorkbookCount = 0;
-var curProjCount = 0;
-var curDataCount = 0;
-var curTaskCount = 0;
-var curSubscriptionCount = 0;
-var curCurrentSite = 0;
-var sitesList = [];
+var apiToken = "", apiLevel = 0, siteCount = 0, userCount = 0, groupCount = 0, viewCount = 0, workbookCount = 0, projCount = 0, dataCount = 0, taskCount = 0, subscriptionCount = 0, curUserCount = 0, 
+	curGroupCount = 0, curViewCount = 0, curWorkbookCount = 0, curProjCount = 0, curDataCount = 0, curTaskCount = 0, curSubscriptionCount = 0, curCurrentSite = 0, sitesList = [];
 
 function checkAPIAccess() {
 	$('.ajax-loading').show();
