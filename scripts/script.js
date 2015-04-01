@@ -135,8 +135,11 @@ function switchSite() {
 				&& curTaskCount == -curCurrentSite  && curSubscriptionCount == -curCurrentSite && curGroupCount == -curCurrentSite) {
 		console.log("FINISHED LOADING!!");
 		countUsers();
-		$('.ajax-loading').hide();
-		document.getElementById("loadingMsg").hidden = true;
+		tableauDB.fetchIndexRecords("workbooks", "sitestats", "table", function(stats) {
+			drawDashboard(stats);
+			$('.ajax-loading').hide();
+			document.getElementById("loadingMsg").hidden = true;
+		});
 	}
 }
 
