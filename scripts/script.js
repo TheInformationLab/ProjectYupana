@@ -594,3 +594,33 @@ function initiliseStatsTiles() {
 			console.log("Stats Tile Layout Done!");
 		});
 }
+function drawDashboard(stats) {
+
+	var ndx = crossfilter(stats);
+	var siteDim = ndx.dimension(function(d) {return d.friendlyName});
+	var countMeasure = siteDim.group().reduceSum(function(d) {return d.count});
+	var chartTitle = document.createElement("h4");
+	chartTitle.innerHTML = "Workbooks";
+	var dashboardDiv = document.createElement("div");
+	dashboardDiv.setAttribute('id','dashboard');
+	dashboardDiv.appendChild(chartTitle);
+	statsContainer.appendChild(dashboardDiv);
+	var statsbarchart = dc.rowChart("#dashboard");
+	statsbarchart
+		.width(1000).height(400)
+		.margins({top: 0, left: 10, right: 10, bottom: 20})
+		.dimension(siteDim)
+		.group(countMeasure)
+		.label(function (d) {
+			return d.key;
+		})
+		.title(function (d) {
+			return d.value;
+		})
+		.elasticX(true)
+		.xAxis().ticks(8)
+	statsbarchart.xAxis().tickFormat(d3.format("d"));
+	statsbarchart.labelOffsetY(18);
+	statsbarchart.ordering(function(d){return -d.value});
+	dc.renderAll();
+}
