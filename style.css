@@ -129,12 +129,12 @@ div.ajax-loading {
   cursor: pointer;
 }
 
-.selectedItem{
-	width: 200px;
-	height:50px;
-	border-bottom: 3px solid #F0F0F0;
-	background-color:#000;
-	color: #FFF;
+#dashboard{
+	width: 100%;
+	height:410px;
+	border-bottom: 3px solid #0194FE;
+	background-color:#FFF;
+	margin-bottom: 49px;
 }
 
 #userContainer{

@@ -590,8 +590,9 @@ function drawDashboard(stats) {
 	dashboardDiv.appendChild(chartTitle);
 	statsContainer.appendChild(dashboardDiv);
 	var statsbarchart = dc.rowChart("#dashboard");
+	var width = document.getElementById('item dashboard').offsetWidth;
 	statsbarchart
-		.width(1000).height(400)
+		.width(width).height(400)
 		.margins({top: 0, left: 10, right: 10, bottom: 20})
 		.dimension(siteDim)
 		.group(countMeasure)
@@ -623,4 +624,11 @@ function drawDashboard(stats) {
 		document.querySelector('#statsContainer').style = 'static';
 		console.log("Stats Tile Layout Done!");
 	});
-}
+}/*
+window.onresize = function(event) {
+  var newWidth = document.getElementById('item dashboard').offsetWidth;
+  var statsbarchart = dc.rowChart(".dashboard");
+  statsbarchart.width(newWidth)
+    .transitionDuration(0);
+  dc.renderAll();
+}; */
