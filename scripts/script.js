@@ -213,22 +213,22 @@ function getGroups_noAPI() {
 		if (groups.length == 0) {
 			curGroupCount = -curCurrentSite;
 			switchSite();
-		}
-		for (var i = 0, group; group = groups[i]; i++) {
-			var groupID = group.getElementsByTagName("id")[0].innerHTML;
-			var name = group.getElementsByTagName("name")[0].innerHTML;
-			var domain = group.getElementsByTagName("domain")[0].innerHTML;
-			var siteID = sitesList[curCurrentSite].siteID;
-			tableauDB.createGroup(groupID, name, domain, siteID, function() {
-				console.log("Group "+name+" saved!");
-				currentGroup++;
-				if (currentGroup == curGroupCount) {
-					console.log("All groups saved!");
-					document.getElementById("item group").innerHTML = "<h2>"+groupCount+"</h2> groups";
-					curGroupCount = -curCurrentSite;
-					switchSite();
-				}
-			});
+		} else {
+			for (var i = 0, group; group = groups[i]; i++) {
+				var groupID = group.getElementsByTagName("id")[0].innerHTML;
+				var name = group.getElementsByTagName("name")[0].innerHTML;
+				var domain = group.getElementsByTagName("domain")[0].innerHTML;
+				tableauDB.createGroup(groupID, name, domain, siteID, function() {
+					console.log("Group "+name+" saved!");
+					currentGroup++;
+					if (currentGroup == curGroupCount) {
+						console.log("All groups saved!");
+						document.getElementById("item group").innerHTML = "<h2>"+groupCount+"</h2> groups";
+						curGroupCount = -curCurrentSite;
+						switchSite();
+					}
+				});
+			}
 		}
 	};
 	groupXML.send();
