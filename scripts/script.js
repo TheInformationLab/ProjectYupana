@@ -210,6 +210,11 @@ function getGroups_noAPI() {
 		curGroupCount = groups.length;
 		groupCount = groupCount + curGroupCount;
 		currentGroup = 0;
+		var siteID = sitesList[curCurrentSite].siteID;
+		var siteName = sitesList[curCurrentSite].friendlyName;
+		tableauDB.createSiteStat(siteID, siteName, "groups", curGroupCount, function(site){
+			console.log("Group count for " + site.friendlyName + " saved");
+		});
 		if (groups.length == 0) {
 			curGroupCount = -curCurrentSite;
 			switchSite();
@@ -247,6 +252,11 @@ function getViews_noAPI() {
 		curViewCount = views.length;
 		viewCount = viewCount + curViewCount;
 		currentView = 0;
+		var siteID = sitesList[curCurrentSite].siteID;
+		var siteName = sitesList[curCurrentSite].friendlyName;
+		tableauDB.createSiteStat(siteID, siteName, "views", curViewCount, function(site){
+			console.log("View count for " + site.friendlyName + " saved");
+		});
 		if (views.length == 0) {
 			curViewCount = -curCurrentSite;
 			switchSite();
@@ -293,6 +303,11 @@ function getWorkbooks_noAPI() {
 		curWorkbookCount = workbooks.length;
 		workbookCount = workbookCount + curWorkbookCount;
 		currentWorkbook = 0;
+		var siteID = sitesList[curCurrentSite].siteID;
+		var siteName = sitesList[curCurrentSite].friendlyName;
+		tableauDB.createSiteStat(siteID, siteName, "workbooks", curWorkbookCount, function(site){
+			console.log("Workbook count for " + site.friendlyName + " saved");
+		});
 		if (workbooks.length == 0) {
 			curWorkbookCount = -curCurrentSite;
 			switchSite();
@@ -339,6 +354,11 @@ function getProjects_noAPI() {
 		curProjCount = projects.length;
 		projCount = projCount + curProjCount;
 		currentProj = 0;
+		var siteID = sitesList[curCurrentSite].siteID;
+		var siteName = sitesList[curCurrentSite].friendlyName;
+		tableauDB.createSiteStat(siteID, siteName, "projects", curProjCount, function(site){
+			console.log("Project count for " + site.friendlyName + " saved");
+		});
 		for (var i = 0, view; view = projects[i]; i++) {
 			var projID = view.getElementsByTagName("id")[0].innerHTML;
 			var name = view.getElementsByTagName("name")[0].innerHTML;
@@ -374,6 +394,11 @@ function getDataSources_noAPI() {
 		curDataCount = datasources.length;
 		dataCount = dataCount + curDataCount;
 		currentData = 0;
+		var siteID = sitesList[curCurrentSite].siteID;
+		var siteName = sitesList[curCurrentSite].friendlyName;
+		tableauDB.createSiteStat(siteID, siteName, "datasources", curDataCount, function(site){
+			console.log("Datasources count for " + site.friendlyName + " saved");
+		});
 		if (datasources.length == 0) {
 			curDataCount = -curCurrentSite;
 			switchSite();
@@ -412,6 +437,11 @@ function getTasks_noAPI() {
 		curTaskCount = tasks.length;
 		taskCount = taskCount + curTaskCount;
 		currentTask = 0;
+		var siteID = sitesList[curCurrentSite].siteID;
+		var siteName = sitesList[curCurrentSite].friendlyName;
+		tableauDB.createSiteStat(siteID, siteName, "tasks", curTaskCount, function(site){
+			console.log("Task count for " + site.friendlyName + " saved");
+		});
 		if (tasks.length == 0) {
 			curTaskCount = -curCurrentSite;
 			switchSite();
@@ -459,6 +489,11 @@ function getSubscriptions_noAPI() {
 		curSubscriptionCount = subscriptions.length;
 		subscriptionCount = subscriptionCount + curSubscriptionCount;
 		currentSubscription = 0;
+		var siteID = sitesList[curCurrentSite].siteID;
+		var siteName = sitesList[curCurrentSite].friendlyName;
+		tableauDB.createSiteStat(siteID, siteName, "subscriptions", curSubscriptionCount, function(site){
+			console.log("Subscription count for " + site.friendlyName + " saved");
+		});
 		if (subscriptions.length == 0) {
 			curSubscriptionCount = -curCurrentSite;
 			switchSite();
