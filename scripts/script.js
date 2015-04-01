@@ -566,11 +566,11 @@ function initiliseStatsTiles() {
 		iso.arrange({
 			// options
 			itemSelector: '.item',
-			layoutMode: 'cellsByRow',
-			cellsByRow: {
-				containerStyle: null,
+			layoutMode: 'masonry',
+			masonry: {
 				columnWidth: 210,
-				rowHeight: 60
+				gutter: 10,
+				isFitWidth: true
 			}
 		});
 		iso.on('layoutComplete', function(){
@@ -612,12 +612,12 @@ function drawDashboard(stats) {
 	iso.arrange({
 		// options
 		itemSelector: '.item',
-		layoutMode: 'cellsByRow',
-		cellsByRow: {
-			containerStyle: null,
-			columnWidth: 210,
-			rowHeight: 60
-		}
+		layoutMode: 'masonry',
+			masonry: {
+				columnWidth: 210,
+				gutter: 10,
+				isFitWidth: true
+			}
 	});
 	iso.on('layoutComplete', function(){
 		document.querySelector('#statsContainer').style = 'static';
