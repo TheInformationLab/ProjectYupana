@@ -6,6 +6,7 @@ var exponent = '';
 var authenticity = '';
 var fullURL = '';
 var siteSelected = false;
+var serverName = '';
 
 console.log("serverURL: "+serverURL);
 console.log("site: "+site);
@@ -24,12 +25,12 @@ function initializeScreen(){
 
 function checkLoggedIn() {
 	if (fullURL) {
-		console.log("Testing Logged in to Tableau Server: "+fullURL+"/projects.xml");
+		console.log("Testing Logged in to Tableau Server: "+fullURL+"/vizportal/api/web/v1/getSessionInfo");
 		req.open(
 			"GET",
-			fullURL+"/projects.xml",
+			fullURL+"/vizportal/api/web/v1/getSessionInfo",
 			true);
-		
+
 		req.onload = function() {
 			if (this.status == "401") {
 				console.log("User not logged in");
@@ -38,7 +39,6 @@ function checkLoggedIn() {
 				var serURL = document.createElement("input");
 				serURL.setAttribute('id','serURL');
 				serURL.setAttribute('type','text');
-				serURL.setAttribute('value','https://tableauserver.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
 				var urlSubmit = document.createElement("button");
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
@@ -67,223 +67,228 @@ function checkLoggedIn() {
 				div_serverLogin.appendChild(urlSubmit);
 				document.body.appendChild(div_serverLogin);
 			}
-};	
+};
 
+//Function from http://papermashup.com/read-url-get-variables-withjavascript/
+function getUrlVars(url) {
+	var vars = {};
+	var parts = url.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+	vars[key] = value;
+	});
+	return vars;
+}
 
 //Function called when Server URL is entered
 function serURLSubmit(){
 	//Disable submit button
 	console.log("serURLSubmit: starting");
 	document.querySelector('#urlSubmit').hidden = true;
-	
+
 	//Set serverURL variable
 	serverURL = document.querySelector('#serURL').value;
-	getServerLogo();
 	//chrome.storage.sync["serverURL"] = serverURL;
-	
-	//Get auth xml
-	console.log("serURLSubmit: getting auth xml");
-	var authXML = new XMLHttpRequest();
-	authXML.open(
-		"GET",
-		serverURL+"/manual/auth?format=xml",
-		true);
-	console.log("serURLSubmit: authXML.onload going to readAuth()");
-	authXML.onload = function(){
-		modulus = authXML.responseXML.getElementsByTagName("modulus")[0].innerHTML;
-		exponent = authXML.responseXML.getElementsByTagName("exponent")[0].innerHTML;
-		authenticity = authXML.responseXML.getElementsByTagName("authenticity_token")[0].innerHTML;
-		//var headers = authXML.getAllResponseHeaders();
-		//console.log("Headers :"+headers);
-		console.log(modulus);
-		console.log(exponent);
-		console.log(authenticity);
-		//Show username & password form
-		var div_serverLogin = document.getElementById("serverLogin");
-		var userField = document.createElement("input");
-		userField.setAttribute('id','username');
-		userField.setAttribute('type','text');
-		userField.setAttribute('value','Username');
-		userField.setAttribute('style','color:#BDBDBD;font-style: italic;');
-		var passField = document.createElement("input");
-		passField.setAttribute('id','password');
-		passField.setAttribute('type','text'); 
-		passField.setAttribute('value','Password'); 
-		passField.setAttribute('style','color:#BDBDBD;font-style: italic;');
-		var loginBtn = document.createElement("button");
-		loginBtn.setAttribute('id','login');
-		loginBtn.innerHTML = "Login";
-		loginBtn.addEventListener('click', function(){
-			loginUser();
-		}, false);
-		userField.addEventListener('focusin', function(){
-			if (userField.value=="Username") {
-				userField.value="";
-				userField.setAttribute('style','');
-			}
-		}, false);
-		passField.addEventListener('focusin', function(){
-			if (passField.value=="Password") {
-				passField.setAttribute('type','password'); 
-				passField.value="";
-				passField.setAttribute('style','');
-			}
-		}, false);
-		div_serverLogin.appendChild(userField);
-		div_serverLogin.appendChild(passField);
-		div_serverLogin.appendChild(loginBtn);
-	};
-	authXML.send(null);
+
+	//Get server info
+	console.log("serURLSubmit: getting server info");
+	var settings = {
+  "async": true,
+  "crossDomain": true,
+  "url": serverURL+"/vizportal/api/web/v1/getServerSettingsUnauthenticated",
+  "method": "POST",
+	  "data": "{\"method\":\"getServerSettingsUnauthenticated\",\"params\":{}}"
+	}
+
+	$.ajax(settings).done(function (response) {
+		var serverLogo = response.result.customization.customLogoPath;
+		if (serverLogo){
+			var imageURL = serverURL + serverLogo;
+			console.log(imageURL);
+			var logoDiv = document.createElement("div");
+			var logoIMG = document.createElement("img");
+			logoDiv.setAttribute('class','serverLogo');
+			logoDiv.setAttribute('id','serverLogo');
+			logoIMG.setAttribute('src',imageURL);
+			logoDiv.appendChild(logoIMG);
+			document.body.appendChild(logoDiv);
+		}
+		if (response.result.authenticationType.type == "SAML") {
+			console.log("SAML Login");
+			var win = gui.Window.open (serverURL+"/vizportal/api/saml?dest=%2F", {
+  			position: 'center',
+  			width: 901,
+  			height: 600,
+				toolbar: false
+			});
+			win.on ('loaded', function(){
+				var curURL = win.window.location.href;
+				if (getUrlVars(curURL)[":isFromSaml"] == "y") {
+					serverURL = win.window.location.protocol + '//' + win.window.location.host + win.window.location.pathname;
+					console.log("New Server URL = " + serverURL);
+					require('nw.gui').Window.get().cookies.getAll({}, function(cookies) {
+		    		cookies.forEach(function(cookie) {
+		        	if (cookie.name == "workgroup_session_id") {
+								workgroup_session_id = cookie.value;
+							} else if (cookie.name == "XSRF-TOKEN") {
+								xsrf_token = cookie.value;
+							}
+		    		})
+						win.close();
+						var settings = {
+						  "async": false,
+						  "crossDomain": true,
+						  "url": serverURL+"/vizportal/api/web/v1/getSessionInfo",
+						  "method": "POST",
+						  "headers": {
+						    "x-xsrf-token": xsrf_token
+						  },
+						  "data": "{\"method\":\"getSessionInfo\",\"params\":{}}"
+						}
+						$.ajax(settings).done(function (response) {
+							$('#serverLogin').hide();
+							currentSiteLuid = response.result.site.luid;
+							deleteDB('tableau');
+							tableauDB.open(checkAPIAccess);
+						});
+					});
+				}
+			});
+		} else {
+			var div_serverLogin = document.getElementById("serverLogin");
+			var serverName = document.createElement("div");
+			serverName.innerHTML = response.result.customization.serverName;
+			serverName.setAttribute('id','serverName');
+			serverName.setAttribute('style','padding-top:10px;');
+			var userField = document.createElement("input");
+			userField.setAttribute('id','username');
+			userField.setAttribute('type','text');
+			userField.setAttribute('style','color:#BDBDBD;font-style: italic;');
+			var passField = document.createElement("input");
+			passField.setAttribute('id','password');
+			passField.setAttribute('type','password');
+			passField.setAttribute('style','color:#BDBDBD;font-style: italic;');
+			var loginBtn = document.createElement("button");
+			loginBtn.setAttribute('id','login');
+			loginBtn.innerHTML = "Login";
+			loginBtn.addEventListener('click', function(){
+				loginUser();
+			}, false);
+			userField.addEventListener('focusin', function(){
+				if (userField.value=="Username") {
+					userField.value="";
+					userField.setAttribute('style','');
+				}
+			}, false);
+			passField.addEventListener('focusin', function(){
+				if (passField.value=="Password") {
+					passField.setAttribute('type','password');
+					passField.value="";
+					passField.setAttribute('style','');
+				}
+			}, false);
+			div_serverLogin.appendChild(serverName);
+			div_serverLogin.appendChild(userField);
+			div_serverLogin.appendChild(passField);
+			div_serverLogin.appendChild(loginBtn);
+		}
+	});
 	console.log("serURLSubmit: complete");
 };
 
-function loginUser(site, callback){
-	console.log("LoginUser"); 
+function loginUser(){
+	console.log("LoginUser");
 	document.querySelector('#login').hidden = true;
+	username = document.querySelector('#username').value;
 	password = document.querySelector('#password').value;
-	var authXML = new XMLHttpRequest();
-	authXML.open(
-		"GET",
-		serverURL+"/manual/auth?format=xml",
-		true);
-	console.log("LoginUser: authXML.onload going to readAuth()");
-	authXML.onload = function(){
-		modulus = authXML.responseXML.getElementsByTagName("modulus")[0].innerHTML;
-		exponent = authXML.responseXML.getElementsByTagName("exponent")[0].innerHTML;
-		authenticity = authXML.responseXML.getElementsByTagName("authenticity_token")[0].innerHTML;
-		var RSA = new RSAKey();
-		RSA.setPublic(modulus, exponent);
-		var res = RSA.encrypt(password);
-		console.log(res);
-		var data = new FormData();
-		data.append('crypted', res);
-		data.append('authenticity_token', authenticity);
-		if (!siteSelected) {
-			fullURL = serverURL;
-		} else {
-			data.append('target_site',site);
+
+	var settings = {
+	  "async": true,
+	  "crossDomain": true,
+	  "url": serverURL + "/vizportal/api/web/v1/generatePublicKey",
+	  "method": "POST",
+	  "data": "{\"method\":\"generatePublicKey\",\"params\":{}}"
+	}
+
+	$.ajax(settings).done(function (response) {
+	  var keyID = response.result.keyId;
+		var key = response.result.key;
+		var res = rsa.encrypt(password, key)
+		var settings = {
+		  "async": true,
+		  "crossDomain": true,
+		  "url": serverURL+"/vizportal/api/web/v1/login",
+		  "method": "POST",
+		  "data": "{\"method\":\"login\",\"params\":{\"username\":\""+username+"\",\"encryptedPassword\":\""+res+"\",\"keyId\":\""+keyID+"\"}}"
 		}
-		data.append('username', document.querySelector('#username').value);
-		data.append('format', "xml");
-		console.log(document.querySelector('#username').value);
-		console.log("Site " + site);
-		var loginXML = new XMLHttpRequest();
-		loginXML.open(
-			"POST",
-			serverURL+"/auth/login",
-			true);
-		loginXML.onload = function(){
-			var sites = loginXML.responseXML.getElementsByTagName("site");
-			var user = loginXML.responseXML.getElementsByTagName("user");
-			if (user.length > 0) {
-				console.log("Login Successful");
-				document.querySelector('#serverLogin').hidden = true;
-				document.querySelector('#username').hidden = true;
-				document.querySelector('#password').hidden = true;
-				deleteDB('tableau');
-				tableauDB.open(checkAPIAccess);
-			} else if (sites.length > 0 && !site) {
-				console.log("Fresh Login, going to default site")
-				var defaultSiteID = sites[0].getAttribute("id");
-				console.log("Default site ID: "+ defaultSiteID);
-				if (defaultSiteID.length > 0) {
-					fullURL = serverURL +"/t/"+defaultSiteID;
-				} else {
-					fullURL = serverURL;
-				}
-				siteSelected = true;
-				loginUser(defaultSiteID);
-			} else if (site) {
-				console.log("Logging into site "+site);
-				if (site.length > 0) {
-					fullURL = serverURL +"/t/"+site;
-					siteSelected = true;
-				} 
-				loginUser(site);
-			} else {
-				console.log("Error logging in");
-				console.log(this.response);
-			}
-		};
-		loginXML.send(data);
-		};
-	authXML.send(null);
+
+		$.ajax(settings).done(function (response, textStatus, jqXHR) {
+			require('nw.gui').Window.get().cookies.getAll({}, function(cookies) {
+    		cookies.forEach(function(cookie) {
+        	if (cookie.name == "workgroup_session_id") {
+						workgroup_session_id = cookie.value;
+					} else if (cookie.name == "XSRF-TOKEN") {
+						xsrf_token = cookie.value;
+					}
+    		})
+			});
+			$('#serverLogin').hide();
+			currentSiteLuid = response.result.site.luid;
+			deleteDB('tableau');
+			tableauDB.open(checkAPIAccess);
+		});
+	});
 };
 
 function switchSiteLogin(site){
-	console.log("Switching Site"); 
-	password = document.querySelector('#password').value;
-	var authXML = new XMLHttpRequest();
-	authXML.open(
-		"GET",
-		serverURL+"/manual/auth?format=xml",
-		true);
-	console.log("switchSiteLogin: authXML.onload going to readAuth()");
-	authXML.onload = function(){
-		modulus = authXML.responseXML.getElementsByTagName("modulus")[0].innerHTML;
-		exponent = authXML.responseXML.getElementsByTagName("exponent")[0].innerHTML;
-		authenticity = authXML.responseXML.getElementsByTagName("authenticity_token")[0].innerHTML;
-		var RSA = new RSAKey();
-		RSA.setPublic(modulus, exponent);
-		var res = RSA.encrypt(password);
-		console.log(res);
-		var data = new FormData();
-		data.append('crypted', res);
-		data.append('authenticity_token', authenticity);
-		if (!siteSelected) {
-			fullURL = serverURL;
-		} else {
-			data.append('target_site',site);
-		}
-		data.append('username', document.querySelector('#username').value);
-		data.append('format','xml');
-		console.log(document.querySelector('#username').value);
-		console.log("Site " + site);
-		var loginXML = new XMLHttpRequest();
-		loginXML.open(
-			"POST",
-			serverURL+"/auth/login",
-			true);
-		loginXML.onload = function(){
-			var sites = loginXML.responseXML.getElementsByTagName("site");
-			var user = loginXML.responseXML.getElementsByTagName("user");
-			if (user.length > 0) {
-				console.log("Login Successful");
-				document.querySelector('#serverLogin').hidden = true;
-				document.querySelector('#username').hidden = true;
-				document.querySelector('#password').hidden = true;
-				getServerElements_noAPI();
-			} else if (sites.length > 0 && !site) {
-				console.log("Fresh Login, going to default site")
-				var defaultSiteID = sites[0].getAttribute("id");
-				console.log("Default site ID: "+ defaultSiteID);
-				if (defaultSiteID.length > 0) {
-					fullURL = serverURL +"/t/"+defaultSiteID;
-				} else {
-					fullURL = serverURL;
-				}
-				siteSelected = true;
-				switchSiteLogin(defaultSiteID);
-			} else if (site) {
-				console.log("Logging into site "+site);
-				if (site.length > 0) {
-					fullURL = serverURL +"/t/"+site;
-					siteSelected = true;
-				} 
-				switchSiteLogin(site);
-			} else {
-				console.log("Error logging in");
-				console.log(this.response);
+	console.log("Switching Site to "+site);
+	var settingsA = {
+	  "async": false,
+	  "crossDomain": true,
+	  "url": serverURL+"/vizportal/api/web/v1/getServerSettingsUnauthenticated",
+	  "method": "POST",
+	  "headers": {
+	    "X-XSRF-TOKEN": xsrf_token
+	  },
+	  "data": "{\"method\":\"getServerSettingsUnauthenticated\",\"params\":{}}"
+	}
+
+	$.ajax(settingsA).done(function (responseA) {
+			var settingsB = {
+			  "async": false,
+			  "crossDomain": true,
+			  "url": serverURL+"/vizportal/api/web/v1/switchSite",
+			  "method": "POST",
+			  "headers": {
+			    "X-XSRF-TOKEN": xsrf_token
+			  },
+			  "data": "{\"method\":\"switchSite\",\"params\":{\"urlName\":\""+site+"\"}}"
 			}
-		};
-		loginXML.send(data);
-		};
-	authXML.send(null);
+			$.ajax(settingsB).done(function (responseB) {
+				require('nw.gui').Window.get().cookies.getAll({}, function(cookies) {
+					cookies.forEach(function(cookie) {
+						if (cookie.name == "workgroup_session_id") {
+							workgroup_session_id = cookie.value;
+						} else if (cookie.name == "XSRF-TOKEN") {
+							xsrf_token = cookie.value;
+						}
+					})
+					var settingsC = {
+					  "async": false,
+					  "crossDomain": true,
+					  "url": serverURL+"/vizportal/api/web/v1/getSessionInfo",
+					  "method": "POST",
+					  "headers": {
+					    "x-xsrf-token": xsrf_token
+					  },
+					  "data": "{\"method\":\"getSessionInfo\",\"params\":{}}"
+					}
+					$.ajax(settingsC).done(function (responseC) {
+						updateSiteInfo(responseC.result.site);
+						//getServerElements_noAPI();
+					});
+				});
+			});
+	});
+
 };
 
 initializeScreen();
-
-//Add Listeners to Login Page
-//document.addEventListener('DOMContentLoaded', function () {
-  //document.querySelector('#urlSubmit').addEventListener('click', serURLSubmit);
-// });

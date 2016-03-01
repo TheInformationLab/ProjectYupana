@@ -30,14 +30,14 @@ var tableauDB = (function () {
 			if (db.objectStoreNames.contains('views')) {
 				db.deleteObjectStore('views');
 			}
-			if (db.objectStoreNames.contains('dataconnections')) {
-				db.deleteObjectStore('dataconnections');
-			}
 			if (db.objectStoreNames.contains('groups')) {
 				db.deleteObjectStore('groups');
 			}
-			if (db.objectStoreNames.contains('datasources')) {
-				db.deleteObjectStore('datasources');
+			if (db.objectStoreNames.contains('pubdatasources')) {
+				db.deleteObjectStore('pubdatasources');
+			}
+			if (db.objectStoreNames.contains('embeddatasources')) {
+				db.deleteObjectStore('embeddatasources');
 			}
 			if (db.objectStoreNames.contains('tasks')) {
 				db.deleteObjectStore('tasks');
@@ -45,14 +45,16 @@ var tableauDB = (function () {
 			if (db.objectStoreNames.contains('subscriptions')) {
 				db.deleteObjectStore('subscriptions');
 			}
+			if (db.objectStoreNames.contains('subscriptionSchedules')) {
+				db.deleteObjectStore('subscriptionSchedules');
+			}
 			if (db.objectStoreNames.contains('sitestats')) {
 				db.deleteObjectStore('sitestats');
 			}
 			// Create a new datastore.
 			var store = db.createObjectStore('sites', {
-					keyPath : 'siteID'
+					keyPath : 'id'
 				});
-			store.createIndex("friendlyName","friendlyName",{unique:false});
 			var store = db.createObjectStore('users', {
 					keyPath : 'name'
 				});
@@ -62,12 +64,11 @@ var tableauDB = (function () {
 			store.createIndex("licensing_level","licensing_level",{unique:false});
 			store.createIndex("publisher","publisher",{unique:false});
 			var store = db.createObjectStore('projects', {
-					keyPath : 'projID'
+					keyPath : 'id'
 				});
 			store.createIndex("siteID","siteID",{unique:false});
 			store.createIndex("name","name",{unique:false});
-			store.createIndex("ownerID","ownerID",{unique:false});
-			store.createIndex("projID","projID",{unique:false});
+			store.createIndex("ownerId","ownerID",{unique:false});
 			var store = db.createObjectStore('workbooks', {
 					keyPath : 'workbookID'
 				});
@@ -79,42 +80,44 @@ var tableauDB = (function () {
 					keyPath : 'viewID'
 				});
 			store.createIndex("name","name",{unique:false});
-			store.createIndex("ownerID","ownerID",{unique:false});
 			store.createIndex("siteID","siteID",{unique:false});
-			store.createIndex("title","title",{unique:false});
+			store.createIndex("workbookId","workbookId",{unique:false});
 			//store.createIndex("workbook_url","workbook-url",{unique:false});
-			var store = db.createObjectStore('dataconnections', {
-					keyPath : 'dconnID'
-				});
 			var store = db.createObjectStore('groups', {
 					keyPath : 'groupID'
 				});
 			store.createIndex("name","name",{unique:false});
 			store.createIndex("siteID","siteID",{unique:false});
-			var store = db.createObjectStore('datasources', {
-					keyPath : 'dataID'
+			var store = db.createObjectStore('pubdatasources', {
+					keyPath : 'id'
 				});
 			store.createIndex("siteID","siteID",{unique:false});
 			store.createIndex("name","name",{unique:false});
-			store.createIndex("ownerID","ownerID",{unique:false});
+			var store = db.createObjectStore('embeddatasources', {
+					keyPath : 'id'
+				});
+			store.createIndex("workbookId","workbookId",{unique:false});
+			store.createIndex("siteID","siteID",{unique:false});
+			store.createIndex("name","name",{unique:false});
 			var store = db.createObjectStore('tasks', {
-					keyPath : 'taskID'
+					keyPath : 'id'
 				});
-			store.createIndex("siteID","siteID",{unique:false});
-			store.createIndex("scheduleName","scheduleName",{unique:false});
-			store.createIndex("targetID","targetID",{unique:false});
-			store.createIndex("targetName","targetName",{unique:false});
-			store.createIndex("targetType","targetType",{unique:false});
-			store.createIndex("type","type",{unique:false});
+			store.createIndex("scheduleId","scheduleId",{unique:false});
+			store.createIndex("siteId","siteId",{unique:false});
+			store.createIndex("targetId","targetID",{unique:false});
+			var store = db.createObjectStore('taskSchedules', {
+					keyPath : 'id'
+				});
 			var store = db.createObjectStore('subscriptions', {
-					keyPath : 'subscriptionID'
+					keyPath : 'id'
 				});
-			store.createIndex("siteID","siteID",{unique:false});
-			store.createIndex("scheduleName","scheduleName",{unique:false});
-			store.createIndex("subject","subject",{unique:false});
-			store.createIndex("userEmail","userEmail",{unique:false});
-			store.createIndex("userID","userID",{unique:false});
-			store.createIndex("userName","userName",{unique:false});
+			store.createIndex("scheduleId","scheduleId",{unique:false});
+			store.createIndex("siteId","siteId",{unique:false});
+			store.createIndex("targetId","targetID",{unique:false});
+			store.createIndex("userId","userId",{unique:false});
+			var store = db.createObjectStore('subscriptionSchedules', {
+					keyPath : 'id'
+				});
 			var store = db.createObjectStore('sitestats', {
 					autoIncrement: true
 				});
@@ -136,23 +139,23 @@ var tableauDB = (function () {
 		// Handle errors when opening the datastore.
 		request.onerror = tDB.onerror;
 	};
-	
+
 	/**
 	Count Records in Table
 	**/
-	
+
 	tDB.numberofRecords = function(table, callback) {
 		var db = datastore;
 		var transaction = db.transaction([table], "readonly");
-		var objectStore = transaction.objectStore(table); 
+		var objectStore = transaction.objectStore(table);
 		var count = objectStore.count();
 
 		count.onsuccess = function() {
 			callback(count.result);
-		};		
+		};
 	}
-		
-	
+
+
 
 	/**
 	 * Fetch all of the values or one specific record from a table
@@ -191,7 +194,7 @@ var tableauDB = (function () {
 
 		cursorRequest.onerror = tDB.onerror;
 	};
-	
+
 	/**
 	 * Fetch all of the values or one specific record from a table based on a specific index
 	 */
@@ -233,7 +236,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new site
 	*/
-	tDB.createSite = function (siteID, friendlyname, namespaceURL, user_quota, content_admin_mode, storage_quota, callback) {
+	tDB.createSite = function (id, friendlyname, namespaceURL, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -244,12 +247,9 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('sites');
 
 		var site = {
-			'siteID' : parseInt(siteID),
-			'friendlyName' : friendlyname,
-			'namespaceURL' : namespaceURL,
-			'user_quota' : user_quota,
-			'content_admin_mode' : content_admin_mode,
-			'storage_quota' : storage_quota
+			'id' : id,
+			'name' : friendlyname,
+			'urlName' : namespaceURL
 		};
 
 		// Create the datastore request.
@@ -264,7 +264,31 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+	/**
+	 * Update Site
+	*/
+	tDB.updateSite = function (id, siteObj, callback) {
+
+		var db = datastore;
+		var transaction = db.transaction(['sites'], 'readwrite');
+		var objStore = transaction.objectStore('sites');
+
+		var delRequest = objStore.delete(id);
+
+		delRequest.onsuccess = function(event){
+			var db = datastore;
+			var transaction = db.transaction(['sites'], 'readwrite');
+			var objStore = transaction.objectStore('sites');
+			var site = siteObj;
+			var putRequest = objStore.put(site);
+			putRequest.onsuccess = function (e) {
+				callback(site);
+			};
+			// Handle errors.
+			putRequest.onerror = tDB.onerror;
+		}
+		delRequest.onerror = tDB.onerror;
+	}
 	/**
 	 * Create a new user
 	*/
@@ -302,7 +326,7 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+
 	/**
 	 * Create a new group
 	*/
@@ -336,11 +360,11 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+
 	/**
 	 * Create a new view
 	*/
-	tDB.createView = function (viewID, name, title, index, repository_url, preview_url, updated_at, created_at, ownerID, workbook_url, customized_view_count,siteID, callback) {
+	tDB.createView = function (viewID, name, index, createdAt, editUrl, favorite, hitsTimeSeries, favoritesTotal, hitsLastOneMonthTotal, hitsLastThreeMonthsTotal, hitsLastTwelveMonthsTotal, hitsTotal, ownerId, path, projectId, tags, thumbnailUrl, updatedAt, workbookId, siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -354,15 +378,23 @@ var tableauDB = (function () {
 		var view = {
 			'viewID' : parseInt(viewID),
 			'name' : name,
-			'title' : title,
 			'index' : index,
-			'repository-url' : repository_url,
-			'preview-url' : preview_url,
-			'updated-at' : updated_at,
-			'created-at' : created_at,
-			'ownerID' : parseInt(ownerID),
-			'workbook-url' : workbook_url,
-			'customized-view-count' : parseInt(customized_view_count),
+			'created-at' : createdAt,
+			'edit-url' : editUrl,
+			'favorite' : favorite,
+			'hitsTimeSeries' : hitsTimeSeries,
+			'favoritesTotal' : parseInt(favoritesTotal),
+			'hitsLastOneMonthTotal' : parseInt(hitsLastOneMonthTotal),
+			'hitsLastThreeMonthsTotal' : parseInt(hitsLastThreeMonthsTotal),
+			'hitsLastTwelveMonthsTotal' : parseInt(hitsLastTwelveMonthsTotal),
+			'hitsTotal' : parseInt(hitsTotal),
+			'ownerID' : parseInt(ownerId),
+			'path' : path,
+			'projectID' : parseInt(projectId),
+			'tags' : tags,
+			'thumbnail-url' : thumbnailUrl,
+			'updated-at' : updatedAt,
+			'workbookID' : parseInt(workbookId),
 			'siteID' : parseInt(siteID)
 		};
 
@@ -382,7 +414,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new workbook
 	*/
-	tDB.createWorkbook = function (workbookID, name, size, path, ownerID, projectID , tasks_count, updated_at,created_at, repository_url, tabs_allowed,siteID, callback) {
+	tDB.createWorkbook = function (workbookID, name, size, downloadUrl, defaultViewId, defaultViewUrl, description, displayTabs, hasAlert, hasExtracts, ownerID, projectID, repositoryUrl, sheetCount, thumbnailUrl, updated_at, favoritesTotal, hitsLastOneMonthTotal, hitsLastThreeMonthsTotal, hitsLastTwelveMonthsTotal, hitsTotal, subscriptionsTotal, siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -396,15 +428,25 @@ var tableauDB = (function () {
 		var workbook = {
 			'workbookID' : parseInt(workbookID),
 			'name' : name,
-			'size' : size,
-			'path' : path,
+			'size' : parseInt(size),
+			'downloadUrl' : downloadUrl,
+			'defaultViewId' : parseInt(defaultViewId),
+			'defaultViewUrl' : defaultViewUrl,
+			'description' : description,
+			'displayTabs' : hasAlert,
+			'hasExtracts' : hasExtracts,
 			'ownerID' : parseInt(ownerID),
 			'projectID' : parseInt(projectID),
-			'tasks-count' : tasks_count,
+			'repositoryUrl' : repositoryUrl,
+			'sheetCount' : parseInt(sheetCount),
+			'thumbnailUrl' : thumbnailUrl,
 			'updated-at' : updated_at,
-			'created-at' : created_at,
-			'repository-url' : repository_url,
-			'tabs-allowed' : tabs_allowed,
+			'favoritesTotal' : parseInt(favoritesTotal),
+			'hitsLastOneMonthTotal' : parseInt(hitsLastOneMonthTotal),
+			'hitsLastThreeMonthsTotal' : parseInt(hitsLastThreeMonthsTotal),
+			'hitsLastTwelveMonthsTotal' : parseInt(hitsLastTwelveMonthsTotal),
+			'hitsTotal' : parseInt(hitsTotal),
+			'subscriptionsTotal' : parseInt(subscriptionsTotal),
 			'siteID' : parseInt(siteID)
 		};
 
@@ -420,11 +462,11 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+
 	/**
 	 * Create a new project
 	*/
-	tDB.createProject = function (projID, name, updated_at, created_at, ownerID, siteID, callback) {
+	tDB.createProject = function (prjObject, siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -435,14 +477,8 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('projects');
 
 		// Create an object for the todo item.
-		var project = {
-			'projID' : parseInt(projID),
-			'name' : name,
-			'updated-at' : updated_at,
-			'created-at' : created_at,
-			'ownerID' : parseInt(ownerID),
-			'siteID' : parseInt(siteID)
-		};
+		var project = prjObject;
+		project.siteID = siteID;
 
 		// Create the datastore request.
 		var request = objStore.put(project);
@@ -456,47 +492,71 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+
 	/**
-	 * Create a new data source
+	 * Create a new published data source
 	*/
-	tDB.createDataSource = function (dataID, name, repository_url, ownerID, siteID, callback) {
+	tDB.createPubDataSource = function (dsObject, siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
 		// Initiate a new transaction.
-		var transaction = db.transaction(['datasources'], 'readwrite');
+		var transaction = db.transaction(['pubdatasources'], 'readwrite');
 
 		// Get the datastore.
-		var objStore = transaction.objectStore('datasources');
+		var objStore = transaction.objectStore('pubdatasources');
 
 		// Create an object for the todo item.
-		var datasource = {
-			'dataID' : parseInt(dataID),
-			'name' : name,
-			'repository-url' : repository_url,
-			'ownerID' : parseInt(ownerID),
-			'siteID' : parseInt(siteID)
-		};
+		var pubdatasource = dsObject;
+		pubdatasource.siteID = siteID;
+		//console.log(pubdatasource);
 
 		// Create the datastore request.
-		var request = objStore.put(datasource);
+		var request = objStore.put(pubdatasource);
 
 		// Handle a successful datastore put.
 		request.onsuccess = function (e) {
 			// Execute the callback function.
-			callback(datasource);
+			callback(pubdatasource);
 		};
 
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+	/**
+	 * Create a new embedded data source
+	*/
+	tDB.createEmbedDataSource = function (dsObject, siteID, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['embeddatasources'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('embeddatasources');
+
+		// Create an object for the todo item.
+		var embeddatasource = dsObject;
+		embeddatasource.siteID = siteID;
+		//console.log(embeddatasource);
+
+		// Create the datastore request.
+		var request = objStore.put(embeddatasource);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(embeddatasource);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
 	/**
 	 * Create a new task
 	*/
-	tDB.createTask= function (taskID, type, priority, targetID, targetName, targetType, scheduleID, scheduleName, schedulePriority,
-								 scheduleEnabled, schedule_next_run, schedule_updated_at, siteID, callback) {
+	tDB.createTask= function (taskObj, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -507,21 +567,7 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('tasks');
 
 		// Create an object for the todo item.
-		var task = {
-			'taskID' : parseInt(taskID),
-			'type' : type,
-			'priority' : priority,
-			'targetID' : parseInt(targetID),
-			'targetName' : targetName,
-			'targetType' : targetType,
-			'scheduleID' : parseInt(scheduleID),
-			'scheduleName' : scheduleName,
-			'schedulePriority' : schedulePriority,
-			'scheduleEnabled' : scheduleEnabled,
-			'schedule_next_run' : schedule_next_run,
-			'schedule_updated_at' : schedule_updated_at,
-			'siteID' : parseInt(siteID)
-		};
+		var task = taskObj;
 
 		// Create the datastore request.
 		var request = objStore.put(task);
@@ -535,13 +581,39 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+	/**
+	 * Create a new task scheudle
+	*/
+	tDB.createTaskSchedule = function (tskSchedule, siteID, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['taskSchedules'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('taskSchedules');
+
+		// Create an object for the todo item.
+		var taskSchedule = tskSchedule;
+
+		// Create the datastore request.
+		var request = objStore.put(taskSchedule);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(taskSchedule);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
 	/**
 	 * Create a new subscription
 	 */
-	
-	tDB.createSubscription= function (subscriptionID, subject, userID, userName, userEmail, scheduleID, scheduleName, schedulePriority,
-								 scheduleEnabled, schedule_next_run, schedule_updated_at, siteID, callback) {
+
+	tDB.createSubscription= function (sub, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -552,20 +624,7 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('subscriptions');
 
 		// Create an object for the todo item.
-		var subscription = {
-			'subscriptionID' : parseInt(subscriptionID),
-			'subject' : subject,
-			'userID' : parseInt(userID),
-			'userName' : userName,
-			'userEmail' : userEmail,
-			'scheduleID' : parseInt(scheduleID),
-			'scheduleName' : scheduleName,
-			'schedulePriority' : schedulePriority,
-			'scheduleEnabled' : scheduleEnabled,
-			'schedule_next_run' : schedule_next_run,
-			'schedule_updated_at' : schedule_updated_at,
-			'siteID' : parseInt(siteID)
-		};
+		var subscription = sub;
 
 		// Create the datastore request.
 		var request = objStore.put(subscription);
@@ -579,7 +638,35 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+	/**
+	 * Create a new task scheudle
+	*/
+	tDB.createSubscriptionSchedule = function (subSchedule, siteID, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['subscriptionSchedules'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('subscriptionSchedules');
+
+		// Create an object for the todo item.
+		var subscriptionSchedule = subSchedule;
+
+		// Create the datastore request.
+		var request = objStore.put(subscriptionSchedule);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(subscriptionSchedule);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+
 	/**
 	 * Create a new site stat
 	*/
@@ -612,7 +699,7 @@ var tableauDB = (function () {
 		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
-	
+
 	tDB.countRecords = function (tables, siteID, callback) {
 		var result = [];
 		var table = "";
@@ -622,33 +709,33 @@ var tableauDB = (function () {
 			});
 		}
 	}
-	
+
     tDB.doCount = function (table, siteID, siteName, callback) {
 		var db = datastore;
 		//console.log(table);
 		var transaction = db.transaction([table],"readonly");
 		var count = 0;
-			
+
 		transaction.oncomplete = function(event) {
 			callback(table, siteID, siteName, count);
 		};
-	 
-		var handleResult = function(event) {  
-			var cursor = event.target.result;  
-			if (cursor) {  
+
+		var handleResult = function(event) {
+			var cursor = event.target.result;
+			if (cursor) {
 				count = count + 1;
-				cursor.continue();  
-			  }  
+				cursor.continue();
+			  }
 		};
-	 
+
 			var objectStore = transaction.objectStore(table);
-	 
+
 			if(siteID) {
 				var range = IDBKeyRange.only(siteID);
 				var index = objectStore.index("siteID");
 				index.openCursor(range).onsuccess = handleResult;
 			} else {
-				
+
 				objectStore.openCursor().onsuccess = handleResult;
 			}
 	}
@@ -666,7 +753,7 @@ function deleteDB(indexedDBName) {
 		}
 		dbreq.onerror = function (event) {
 			console.log("indexedDB.delete Error: " + event.message);
-		}	
+		}
 	}
 	catch (e) {
 		console.log("Error: " + e.message);
