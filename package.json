@@ -1,0 +1,14 @@
+{
+  "name": "nw-demo",
+  "version": "0.0.1",
+  "main": "app.html",
+  "window": {
+    "toolbar": false,
+    "width":1020,
+    "height":800
+  },
+  "permissions": [
+          "cookies",
+          "*://*"
+    ]
+}

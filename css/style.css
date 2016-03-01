@@ -52,7 +52,7 @@ div.ajax-loading {
 	position: absolute;
 	left: 50%;
 	margin-left: -150px;
-	top: 30%;
+	top: 300px;
 }
 
 #serURL{
@@ -110,15 +110,20 @@ div.ajax-loading {
 
 #serverLogo{
 	position:fixed;
-	top: 5px;
-	right: 10px;
+	top: 3px;
+	right: 30px;
+	z-index: 1031;
+}
+#serverLogo img {
+	height: 70px;
 }
 
 #statsContainer{
-	margin-top:50px;
+	margin-top:90px;
+	margin-left:10px
 }
 
-.item { 
+.item {
 	width: 200px;
 	height:50px;
 	border-bottom: 3px solid #E97D32;
@@ -131,35 +136,77 @@ div.ajax-loading {
   border-bottom: 3px solid #0194FE;
 }
 
-<<<<<<< HEAD
-#dashboard{
-	width: 100%;
-	height:410px;
+.email{
+	width:50px;
+	height:40px;
+}
+
+#emailImage{
+	width:40px;
+	height:30px;
+	padding:5px;
+}
+
+.countValue {
+	width: 60%;
+	position: absolute;
+	left: 0;
+	bottom: 0;
+}
+
+.countTitle {
+	width: 40%;
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	text-align: right;
+}
+
+.expandEmailBox{
+	width:350px;
+	min-height:300px;
+	border-bottom: 3px solid #0194FE;
+	background-color: #fff;
+	padding:10px;
+}
+.emailForm{
+	margin-left:60px;
+}
+.emailForm input{
+	width: 300px;
+}
+
+#dataSubmit {
+	padding: 10px;
+	margin-top: 5px;
+	width: 305px;
+	background-color: #E97D32;
+	font-size: 14px;
+	color: white;
+	border: 1px solid transparent;
+	border-radius: 4px;
+}
+
+.chartTile{
+	width: 95%;
+	height:450px;
 	border-bottom: 3px solid #0194FE;
 	background-color:#FFF;
 	margin-bottom: 49px;
-=======
-.selectSites{
-	width: 500px;
-	height:200px;
-	border-bottom: 3px solid #0194FE;
-	background-color:#FFF;
-	  margin-bottom: 49px;
->>>>>>> origin/FilterbySites
 }
 
 #userContainer{
 	left:250px;
 }
 
-.users { 
+.users {
 	width: 200px;
 	height:50px;
 	border-bottom: 3px solid #F0F0F0;
 	background-color:#FFF;
  }
- 
+
  fieldset {
 	margin-bottom: 10px;
-	border:1px solid #ccc; 
+	border:1px solid #ccc;
 }
