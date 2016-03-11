@@ -46,8 +46,21 @@ function checkLoggedIn() {
 				div_serverLogin.appendChild(serURL);
 				div_serverLogin.appendChild(urlSubmit);
 				document.body.appendChild(div_serverLogin);
+				$('#serURL').val('Server URL');
+				$('#serURL').focusin(function() {
+					if ($('#serURL').val()=='Server URL') {
+						$('#serURL').val('');
+						serURL.setAttribute('style','');
+					}
+				});
+				$('#serURL').focusout(function() {
+					if ($('#serURL').val()=='') {
+						$('#serURL').val('Server URL');
+						serURL.setAttribute('style','color:#BDBDBD;font-style: italic;');
+					}
+				});
 			} else {
-				tableauDB.open(getWorkbooks);
+				tableauDB.open(initialiseYupana);
 			}
 		};
 		req.send(null);
@@ -58,7 +71,7 @@ function checkLoggedIn() {
 				var serURL = document.createElement("input");
 				serURL.setAttribute('id','serURL');
 				serURL.setAttribute('type','text');
-				serURL.setAttribute('value','https://tableauserver.theinformationlab.co.uk');  //<<<<<<<<<<<< REMOVE!!!
+				serURL.setAttribute('style','color:#BDBDBD;font-style: italic;');
 				var urlSubmit = document.createElement("button");
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
@@ -66,6 +79,19 @@ function checkLoggedIn() {
 				div_serverLogin.appendChild(serURL);
 				div_serverLogin.appendChild(urlSubmit);
 				document.body.appendChild(div_serverLogin);
+				$('#serURL').val('Server URL');
+				$('#serURL').focusin(function() {
+					if ($('#serURL').val()=='Server URL') {
+						$('#serURL').val('');
+						serURL.setAttribute('style','');
+					}
+				});
+				$('#serURL').focusout(function() {
+					if ($('#serURL').val()=='') {
+						$('#serURL').val('Server URL');
+						serURL.setAttribute('style','color:#BDBDBD;font-style: italic;');
+					}
+				});
 			}
 };
 
@@ -117,7 +143,8 @@ function serURLSubmit(){
   			position: 'center',
   			width: 901,
   			height: 600,
-				toolbar: false
+				toolbar: false,
+				title: "Project Yupana, SAML Login - The Information Lab"
 			});
 			win.on ('loaded', function(){
 				var curURL = win.window.location.href;
@@ -146,8 +173,8 @@ function serURLSubmit(){
 						$.ajax(settings).done(function (response) {
 							$('#serverLogin').hide();
 							currentSiteLuid = response.result.site.luid;
-							deleteDB('tableau');
-							tableauDB.open(checkAPIAccess);
+							//deleteDB('tableau');
+							tableauDB.open(initialiseYupana);
 						});
 					});
 				}
@@ -178,6 +205,12 @@ function serURLSubmit(){
 					userField.setAttribute('style','');
 				}
 			}, false);
+			userField.addEventListener('focusout', function(){
+				if (userField.value=="") {
+					userField.value="Username";
+					userField.setAttribute('style','color:#BDBDBD;font-style: italic;');
+				}
+			}, false);
 			passField.addEventListener('focusin', function(){
 				if (passField.value=="Password") {
 					passField.setAttribute('type','password');
@@ -185,10 +218,19 @@ function serURLSubmit(){
 					passField.setAttribute('style','');
 				}
 			}, false);
+			passField.addEventListener('focusout', function(){
+				if (passField.value=="") {
+					passField.setAttribute('type','text');
+					passField.value="Password";
+					passField.setAttribute('style','color:#BDBDBD;font-style: italic;');
+				}
+			}, false);
 			div_serverLogin.appendChild(serverName);
 			div_serverLogin.appendChild(userField);
 			div_serverLogin.appendChild(passField);
 			div_serverLogin.appendChild(loginBtn);
+			$('#username').val('Username');
+			$('#password').val('Password');
 		}
 	});
 	console.log("serURLSubmit: complete");
@@ -221,23 +263,21 @@ function loginUser(){
 		}
 
 		$.ajax(settings).done(function (response, textStatus, jqXHR) {
-			require('nw.gui').Window.get().cookies.getAll({}, function(cookies) {
-    		cookies.forEach(function(cookie) {
-        	if (cookie.name == "workgroup_session_id") {
-						workgroup_session_id = cookie.value;
-					} else if (cookie.name == "XSRF-TOKEN") {
-						xsrf_token = cookie.value;
-					}
-    		})
+			getSessionCookies(function(workgroup_session, xsrf) {
+				workgroup_session_id = workgroup_session;
+				xsrf_token = xsrf;
 			});
 			$('#serverLogin').hide();
 			currentSiteLuid = response.result.site.luid;
-			deleteDB('tableau');
-			tableauDB.open(checkAPIAccess);
+			currentSiteName = response.result.site.name;
+			currentSiteId = response.result.site.name;
+			currentSiteUrl = response.result.site.urlName;
+			//deleteDB('tableau');
+			tableauDB.open(initialiseYupana);
 		});
 	});
 };
-
+/*
 function switchSiteLogin(site){
 	console.log("Switching Site to "+site);
 	var settingsA = {
@@ -288,7 +328,101 @@ function switchSiteLogin(site){
 				});
 			});
 	});
+};
+*/
+var getServerSettingsUnauthenticated = function (callback) {
+	var settings = {
+	  "async": false,
+	  "crossDomain": true,
+	  "url": serverURL+"/vizportal/api/web/v1/getServerSettingsUnauthenticated",
+	  "method": "POST",
+	  "headers": {
+	    "X-XSRF-TOKEN": xsrf_token
+	  },
+	  "data": "{\"method\":\"getServerSettingsUnauthenticated\",\"params\":{}}"
+	}
+	$.ajax(settings).done(function (response) {
+		callback(response);
+	});
+}
 
+var letsSwitchSite = function (site, callback) {
+	var settings = {
+	  "async": false,
+	  "crossDomain": true,
+	  "url": serverURL+"/vizportal/api/web/v1/switchSite",
+	  "method": "POST",
+	  "headers": {
+	    "X-XSRF-TOKEN": xsrf_token
+	  },
+	  "data": "{\"method\":\"switchSite\",\"params\":{\"urlName\":\""+site+"\"}}"
+	}
+	$.ajax(settings).done(function (response) {
+		callback(response);
+	});
+}
+
+var getSessionCookies = function (callback) {
+	require('nw.gui').Window.get().cookies.getAll({}, function(cookies) {
+		cookies.forEach(function(cookie) {
+			if (cookie.name == "workgroup_session_id") {
+				workgroup_session_id = cookie.value;
+			} else if (cookie.name == "XSRF-TOKEN") {
+				xsrf_token = cookie.value;
+			}
+		});
+		callback(workgroup_session_id, xsrf_token);
+	});
+}
+
+var getSessionInfo = function(callback) {
+	var settings = {
+		"async": false,
+		"crossDomain": true,
+		"url": serverURL+"/vizportal/api/web/v1/getSessionInfo",
+		"method": "POST",
+		"headers": {
+			"x-xsrf-token": xsrf_token
+		},
+		"data": "{\"method\":\"getSessionInfo\",\"params\":{}}"
+	}
+	$.ajax(settings).done(function (response) {
+		currentSiteLuid = response.result.site.luid;
+		currentSiteName = response.result.site.name;
+		currentSiteId = response.result.site.name;
+		currentSiteUrl = response.result.site.urlName;
+		callback(response);
+	});
+}
+
+function switchSiteLogin(site){
+	getServerSettingsUnauthenticated(function(response) {
+		console.log("Switching to site "+site);
+		letsSwitchSite(site, function(response){
+			getSessionCookies(function(workgroup_session, xsrf) {
+				workgroup_session_id = workgroup_session;
+				xsrf_token = xsrf;
+				getSessionInfo(function(response) {
+					updateSiteInfo(response.result.site);
+				});
+			});
+		});
+	});
+};
+
+function switchSiteResource(site, callback){
+	getServerSettingsUnauthenticated(function(response) {
+		console.log("Switching to site "+site);
+		letsSwitchSite(site, function(response){
+			getSessionCookies(function(workgroup_session, xsrf) {
+				workgroup_session_id = workgroup_session;
+				xsrf_token = xsrf;
+				getSessionInfo(function(response) {
+					callback(response);
+				});
+			});
+		});
+	});
 };
 
 initializeScreen();

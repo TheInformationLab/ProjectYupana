@@ -3,12 +3,20 @@
   "version": "0.0.1",
   "main": "app.html",
   "window": {
+    "title": "Project Yupana - The Information Lab",
     "toolbar": false,
-    "width":1020,
-    "height":800
+    "width": 1020,
+    "height": 800,
+    "icon": "images/icon.png"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.0",
+    "express": "3.x",
+    "portfinder": "^1.0.2",
+    "unirest": "^0.4.2"
   },
   "permissions": [
-          "cookies",
-          "*://*"
-    ]
+    "cookies",
+    "*://*"
+  ]
 }
