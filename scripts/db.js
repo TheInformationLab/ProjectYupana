@@ -1,11 +1,11 @@
 var tableauDB = (function () {
 	var tDB = {};
-	var datastore = null;
+	var dat1astore = null;
 
 	tDB.open = function (callback) {
 
 		// Open a connection to the datastore.
-		var request = indexedDB.open('tableau', 7);
+		var request = indexedDB.open('tableau', 1);
 
 		// Handle datastore upgrades.
 		request.onupgradeneeded = function (e) {
@@ -18,8 +18,11 @@ var tableauDB = (function () {
 			if (db.objectStoreNames.contains('sites')) {
 				db.deleteObjectStore('sites');
 			}
-			if (db.objectStoreNames.contains('users')) {
-				db.deleteObjectStore('users');
+			if (db.objectStoreNames.contains('serverUsers')) {
+				db.deleteObjectStore('serverUsers');
+			}
+			if (db.objectStoreNames.contains('siteUsers')) {
+				db.deleteObjectStore('siteUsers');
 			}
 			if (db.objectStoreNames.contains('projects')) {
 				db.deleteObjectStore('projects');
@@ -51,42 +54,41 @@ var tableauDB = (function () {
 			if (db.objectStoreNames.contains('sitestats')) {
 				db.deleteObjectStore('sitestats');
 			}
+			if (db.objectStoreNames.contains('viewThumbnails')) {
+				db.deleteObjectStore('viewThumbnails');
+			}
 			// Create a new datastore.
 			var store = db.createObjectStore('sites', {
 					keyPath : 'id'
 				});
-			var store = db.createObjectStore('users', {
-					keyPath : 'name'
+			var store = db.createObjectStore('siteUsers', {
+					keyPath : 'id'
 				});
-			store.createIndex("friendly_name","friendly_name",{unique:false});
-			store.createIndex("admin_type","admin_type",{unique:false});
-			store.createIndex("administrator","administrator",{unique:false});
-			store.createIndex("licensing_level","licensing_level",{unique:false});
-			store.createIndex("publisher","publisher",{unique:false});
+			store.createIndex("username","username",{unique:false});
+			store.createIndex("siteID","siteID",{unique:false});
+			var store = db.createObjectStore('serverUsers', {
+					keyPath : 'id'
+				});
+			store.createIndex("username","username",{unique:true});
 			var store = db.createObjectStore('projects', {
 					keyPath : 'id'
 				});
 			store.createIndex("siteID","siteID",{unique:false});
-			store.createIndex("name","name",{unique:false});
-			store.createIndex("ownerId","ownerID",{unique:false});
+			store.createIndex("ownerId","ownerId",{unique:false});
 			var store = db.createObjectStore('workbooks', {
-					keyPath : 'workbookID'
+					keyPath : 'id'
 				});
 			store.createIndex("siteID","siteID",{unique:false});
-			store.createIndex("name","name",{unique:false});
-			store.createIndex("ownerID","ownerID",{unique:false});
-			store.createIndex("projectID","projectID",{unique:false});
 			var store = db.createObjectStore('views', {
-					keyPath : 'viewID'
+					keyPath : 'id'
 				});
-			store.createIndex("name","name",{unique:false});
 			store.createIndex("siteID","siteID",{unique:false});
-			store.createIndex("workbookId","workbookId",{unique:false});
+			store.createIndex("trending",["usageInfo.hitsLastOneMonthTotal","siteUrl"],{unique:false});
+			store.createIndex("favorite",["isFavorite","siteUrl"],{unique:false});
 			//store.createIndex("workbook_url","workbook-url",{unique:false});
 			var store = db.createObjectStore('groups', {
-					keyPath : 'groupID'
+					keyPath : 'id'
 				});
-			store.createIndex("name","name",{unique:false});
 			store.createIndex("siteID","siteID",{unique:false});
 			var store = db.createObjectStore('pubdatasources', {
 					keyPath : 'id'
@@ -125,6 +127,9 @@ var tableauDB = (function () {
 			store.createIndex("siteID","siteID",{unique:false});
 			store.createIndex("table","table",{unique:false});
 			store.createIndex("StatValue",["siteID","table"],{unique:true});
+			var store = db.createObjectStore('viewThumbnails', {
+					keyPath : 'id'
+				});
 		};
 
 		// Handle successful datastore access.
@@ -144,14 +149,14 @@ var tableauDB = (function () {
 	Count Records in Table
 	**/
 
-	tDB.numberofRecords = function(table, callback) {
+	tDB.numberofRecords = function(table, rtnParam, callback) {
 		var db = datastore;
 		var transaction = db.transaction([table], "readonly");
 		var objectStore = transaction.objectStore(table);
 		var count = objectStore.count();
 
 		count.onsuccess = function() {
-			callback(count.result);
+			callback(count.result, rtnParam);
 		};
 	}
 
@@ -164,7 +169,7 @@ var tableauDB = (function () {
 		var db = datastore;
 		var transaction = db.transaction([table], 'readonly');
 		var objStore = transaction.objectStore(table);
-		//console.log("Fetinging user: " + userID);
+		//////console.log("Fetinging user: " + userID);
 		var intID = parseInt(recordID);
 		if (intID > 0) {
 			var keyRange = IDBKeyRange.only(intID);
@@ -203,13 +208,45 @@ var tableauDB = (function () {
 		var transaction = db.transaction([table], 'readonly');
 		var objStore = transaction.objectStore(table);
 		var index = objStore.index(indexName);
-		//console.log("Fetinging user: " + userID);
+		//////console.log("Fetinging user: " + userID);
 		if (statName) {
 			var keyRange = IDBKeyRange.only(statName);
 		} else {
 			var keyRange = IDBKeyRange.lowerBound(0);
 		}
 		var cursorRequest = index.openCursor(keyRange);
+
+		var records = [];
+
+		transaction.oncomplete = function (e) {
+			// Execute the callback function.
+			callback(records);
+		};
+
+		cursorRequest.onsuccess = function (e) {
+			var result = e.target.result;
+
+			if (!!result == false) {
+				return;
+			}
+
+			records.push(result.value);
+
+			result.continue();
+		};
+
+		cursorRequest.onerror = tDB.onerror;
+	};
+	/**
+	 * Fetch a range of values from a table based on a specific index
+	 */
+	tDB.fetchIndexRange = function (fromVal, toVal, table, indexName, callback) {
+		var db = datastore;
+		var transaction = db.transaction([table], 'readonly');
+		var objStore = transaction.objectStore(table);
+		var index = objStore.index(indexName);
+		var keyRange = IDBKeyRange.bound(fromVal,toVal);
+		var cursorRequest = index.openCursor(keyRange, 'next');
 
 		var records = [];
 
@@ -247,7 +284,7 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('sites');
 
 		var site = {
-			'id' : id,
+			'id' : parseInt(id),
 			'name' : friendlyname,
 			'urlName' : namespaceURL
 		};
@@ -280,6 +317,7 @@ var tableauDB = (function () {
 			var transaction = db.transaction(['sites'], 'readwrite');
 			var objStore = transaction.objectStore('sites');
 			var site = siteObj;
+			site.id = parseInt(site.id);
 			var putRequest = objStore.put(site);
 			putRequest.onsuccess = function (e) {
 				callback(site);
@@ -290,29 +328,48 @@ var tableauDB = (function () {
 		delRequest.onerror = tDB.onerror;
 	}
 	/**
-	 * Create a new user
+	 * Create a new site user
 	*/
-	tDB.createUser = function (name, friendly_name, email, licensing_level, administrator, admin_type, publisher, raw_data_suppressor, callback) {
+	tDB.createSiteUser = function (user, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
 		// Initiate a new transaction.
-		var transaction = db.transaction(['users'], 'readwrite');
+		var transaction = db.transaction(['siteUsers'], 'readwrite');
 
 		// Get the datastore.
-		var objStore = transaction.objectStore('users');
+		var objStore = transaction.objectStore('siteUsers');
 
 		// Create an object for the todo item.
-		var user = {
-			'name' : name,
-			'friendly_name' : friendly_name,
-			'email' : email,
-			'licensing_level' : licensing_level,
-			'administrator' : administrator,
-			'admin_type' : admin_type,
-			'publisher' : publisher,
-			'raw_data_suppressor' : raw_data_suppressor
+		var user = user;
+
+		// Create the datastore request.
+		var request = objStore.put(user);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(user);
 		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+	/**
+	 * Create a new site user
+	*/
+	tDB.createServerUser = function (user, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+
+		// Initiate a new transaction.
+		var transaction = db.transaction(['serverUsers'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('serverUsers');
+
+		// Create an object for the todo item.
+		var user = user;
 
 		// Create the datastore request.
 		var request = objStore.put(user);
@@ -330,7 +387,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new group
 	*/
-	tDB.createGroup = function (groupID, name, domain, siteID, callback) {
+	tDB.createGroup = function (groupObj, siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -341,12 +398,8 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('groups');
 
 		// Create an object for the todo item.
-		var group = {
-			'groupID' : parseInt(groupID),
-			'name' : name,
-			'domain' : domain,
-			'siteID' : parseInt(siteID)
-		};
+		var group = groupObj;
+		group.siteID = parseInt(siteID);
 
 		// Create the datastore request.
 		var request = objStore.put(group);
@@ -364,7 +417,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new view
 	*/
-	tDB.createView = function (viewID, name, index, createdAt, editUrl, favorite, hitsTimeSeries, favoritesTotal, hitsLastOneMonthTotal, hitsLastThreeMonthsTotal, hitsLastTwelveMonthsTotal, hitsTotal, ownerId, path, projectId, tags, thumbnailUrl, updatedAt, workbookId, siteID, callback) {
+	tDB.createView = function (viewObj, siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -375,28 +428,13 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('views');
 
 		// Create an object for the todo item.
-		var view = {
-			'viewID' : parseInt(viewID),
-			'name' : name,
-			'index' : index,
-			'created-at' : createdAt,
-			'edit-url' : editUrl,
-			'favorite' : favorite,
-			'hitsTimeSeries' : hitsTimeSeries,
-			'favoritesTotal' : parseInt(favoritesTotal),
-			'hitsLastOneMonthTotal' : parseInt(hitsLastOneMonthTotal),
-			'hitsLastThreeMonthsTotal' : parseInt(hitsLastThreeMonthsTotal),
-			'hitsLastTwelveMonthsTotal' : parseInt(hitsLastTwelveMonthsTotal),
-			'hitsTotal' : parseInt(hitsTotal),
-			'ownerID' : parseInt(ownerId),
-			'path' : path,
-			'projectID' : parseInt(projectId),
-			'tags' : tags,
-			'thumbnail-url' : thumbnailUrl,
-			'updated-at' : updatedAt,
-			'workbookID' : parseInt(workbookId),
-			'siteID' : parseInt(siteID)
-		};
+		var view = viewObj;
+		view.siteID = parseInt(siteID);
+		if(view.favorite) {
+			view.isFavorite = 1;
+		} else {
+			view.isFavorite = 0;
+		}
 
 		// Create the datastore request.
 		var request = objStore.put(view);
@@ -414,7 +452,7 @@ var tableauDB = (function () {
 	/**
 	 * Create a new workbook
 	*/
-	tDB.createWorkbook = function (workbookID, name, size, downloadUrl, defaultViewId, defaultViewUrl, description, displayTabs, hasAlert, hasExtracts, ownerID, projectID, repositoryUrl, sheetCount, thumbnailUrl, updated_at, favoritesTotal, hitsLastOneMonthTotal, hitsLastThreeMonthsTotal, hitsLastTwelveMonthsTotal, hitsTotal, subscriptionsTotal, siteID, callback) {
+	tDB.createWorkbook = function (workbookObj, siteID, callback) {
 		// Get a reference to the db.
 		var db = datastore;
 
@@ -425,30 +463,8 @@ var tableauDB = (function () {
 		var objStore = transaction.objectStore('workbooks');
 
 		// Create an object for the todo item.
-		var workbook = {
-			'workbookID' : parseInt(workbookID),
-			'name' : name,
-			'size' : parseInt(size),
-			'downloadUrl' : downloadUrl,
-			'defaultViewId' : parseInt(defaultViewId),
-			'defaultViewUrl' : defaultViewUrl,
-			'description' : description,
-			'displayTabs' : hasAlert,
-			'hasExtracts' : hasExtracts,
-			'ownerID' : parseInt(ownerID),
-			'projectID' : parseInt(projectID),
-			'repositoryUrl' : repositoryUrl,
-			'sheetCount' : parseInt(sheetCount),
-			'thumbnailUrl' : thumbnailUrl,
-			'updated-at' : updated_at,
-			'favoritesTotal' : parseInt(favoritesTotal),
-			'hitsLastOneMonthTotal' : parseInt(hitsLastOneMonthTotal),
-			'hitsLastThreeMonthsTotal' : parseInt(hitsLastThreeMonthsTotal),
-			'hitsLastTwelveMonthsTotal' : parseInt(hitsLastTwelveMonthsTotal),
-			'hitsTotal' : parseInt(hitsTotal),
-			'subscriptionsTotal' : parseInt(subscriptionsTotal),
-			'siteID' : parseInt(siteID)
-		};
+		var workbook = workbookObj;
+		workbook.siteID = parseInt(siteID);
 
 		// Create the datastore request.
 		var request = objStore.put(workbook);
@@ -509,7 +525,7 @@ var tableauDB = (function () {
 		// Create an object for the todo item.
 		var pubdatasource = dsObject;
 		pubdatasource.siteID = siteID;
-		//console.log(pubdatasource);
+		//////console.log(pubdatasource);
 
 		// Create the datastore request.
 		var request = objStore.put(pubdatasource);
@@ -539,7 +555,7 @@ var tableauDB = (function () {
 		// Create an object for the todo item.
 		var embeddatasource = dsObject;
 		embeddatasource.siteID = siteID;
-		//console.log(embeddatasource);
+		//////console.log(embeddatasource);
 
 		// Create the datastore request.
 		var request = objStore.put(embeddatasource);
@@ -639,6 +655,34 @@ var tableauDB = (function () {
 		request.onerror = tDB.onerror;
 	};
 	/**
+	 * Create a new subscription
+	 */
+
+	tDB.storeViewThumbnail= function (viewId, viewName, path, siteUrl, usage, image, callback) {
+		// Get a reference to the db.
+		var db = datastore;
+		// Initiate a new transaction.
+		var transaction = db.transaction(['viewThumbnails'], 'readwrite');
+		// Get the datastore.
+		var objStore = transaction.objectStore('viewThumbnails');
+		var imageObj = {};
+		imageObj.id = parseInt(viewId);
+		imageObj.name = viewName;
+		imageObj.path = path;
+		imageObj.siteUrl = siteUrl;
+		imageObj.viewUsage = usage;
+		imageObj.image = image;
+		// Create the datastore request.
+		var request = objStore.put(imageObj);
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(imageObj);
+		};
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+	/**
 	 * Create a new task scheudle
 	*/
 	tDB.createSubscriptionSchedule = function (subSchedule, siteID, callback) {
@@ -708,11 +752,11 @@ var tableauDB = (function () {
 				result[i]=count;
 			});
 		}
-	}
+	};
 
     tDB.doCount = function (table, siteID, siteName, callback) {
 		var db = datastore;
-		//console.log(table);
+		//////console.log(table);
 		var transaction = db.transaction([table],"readonly");
 		var count = 0;
 
@@ -738,7 +782,28 @@ var tableauDB = (function () {
 
 				objectStore.openCursor().onsuccess = handleResult;
 			}
-	}
+	};
+
+	tDB.clearData = function (tableArr) {
+		var db = datastore;
+		if(tableArr.length > 0) {
+			for(var i = 0; i < tableArr.length; i++) {
+				// open a read/write db transaction, ready for clearing the data
+			  var transaction = db.transaction([tableArr[i]], "readwrite");
+
+			  // create an object store on the transaction
+			  var objectStore = transaction.objectStore(tableArr[i]);
+
+			  // clear all the data out of the object store
+			  var objectStoreRequest = objectStore.clear();
+
+			  objectStoreRequest.onsuccess = function(event) {
+			    //console.log(tableArr[i] + " cleared");
+			  };
+				objectStoreRequest.onerror = tDB.onerror;
+			}
+		}
+	};
 
 	// Export the tDB object.
 	return tDB;
@@ -749,13 +814,13 @@ function deleteDB(indexedDBName) {
 		var dbreq = window.indexedDB.deleteDatabase(indexedDBName);
 		dbreq.onsuccess = function (event) {
 		var db = event.result;
-			console.log("indexedDB: " + indexedDBName + " deleted");
+			////console.log("indexedDB: " + indexedDBName + " deleted");
 		}
 		dbreq.onerror = function (event) {
-			console.log("indexedDB.delete Error: " + event.message);
+			////console.log("indexedDB.delete Error: " + event.message);
 		}
 	}
 	catch (e) {
-		console.log("Error: " + e.message);
+		////console.log("Error: " + e.message);
 	}
 }
