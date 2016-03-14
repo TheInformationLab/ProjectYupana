@@ -1,14 +1,33 @@
 {
-  "name": "nw-demo",
-  "version": "0.0.1",
+  "name": "Project Yupana",
+  "description": "Project Yupana by The Information Lab. Author Craig Bloodworth. License GPL3",
+  "version": "0.1.0",
   "main": "app.html",
   "window": {
     "title": "Project Yupana - The Information Lab",
-    "toolbar": false,
-    "width": 1020,
+    "toolbar": true,
+    "frame": true,
+    "position": "mouse",
+    "width": 1100,
     "height": 800,
     "icon": "images/icon.png"
   },
+  "licenses": [
+   {
+       "type": "GPLv3",
+       "url": "https://en.wikipedia.org/wiki/GNU_General_Public_License"
+   }
+  ],
+  "maintainers":[ {
+   "name": "Craig Bloodworth",
+   "email": "craig.bloodworth@theinformationlab.co.uk",
+   "web": "http://www.theinformationlab.co.uk"
+   }],
+   "contributors":[ {
+    "name": "Craig Bloodworth",
+    "email": "craig.bloodworth@theinformationlab.co.uk",
+    "web": "http://www.theinformationlab.co.uk"
+    }],
   "dependencies": {
     "body-parser": "^1.15.0",
     "express": "3.x",
