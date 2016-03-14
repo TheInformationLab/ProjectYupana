@@ -9,8 +9,9 @@ var workgroup_session_id = "", xsrf_token = "", currentSiteLuid = "", apiLevel =
 	  gui.Window.get().menu = mb;
 	}
 
-function initialiseYupana() {
+function initialiseYupana(server) {
 	checkAPIAccess();
+
 	document.body.className = "yay-hide";
 	loadNavBar();
 	initiliseStatsTiles();
@@ -25,24 +26,40 @@ function initialiseYupana() {
 			startWebServer(port);
 		}
 	});
-	tableauDB.fetchRecords(0,"projects", function(projects) {
-		if(projects.length == 0) {
-			reIndexServer();
+	tableauDB.fetchIndexRecords(1,"servers","currentServer", function(currentServer) {
+		if (currentServer.length > 0) {
+			var cs = currentServer[0];
+			console.log(cs);
+			if (serverURL == cs.serverUrl) {
+				tableauDB.fetchRecords(0,"projects", function(projects) {
+					if(projects.length == 0) {
+						console.log("No projects found. ReIndex");
+						reIndexServer();
+					} else {
+						var tableArr = [
+							{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
+							{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'},
+							{'name' : 'groups', 'div' : 'group', 'label' : 'groups'},
+							{'name' : 'projects', 'div' : 'project', 'label' : 'projects'},
+							{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'},
+							{'name' : 'views', 'div' : 'view', 'label' : 'views'},
+							{'name' : 'pubdatasources', 'div' : 'pubdatasource', 'label' : 'published data sources'},
+							{'name' : 'embeddatasources', 'div' : 'embeddatasource', 'label' : 'workbook data sources'},
+							{'name' : 'tasks', 'div' : 'task', 'label' : 'tasks'},
+							{'name' : 'subscriptions', 'div' : 'subscription', 'label' : 'subscriptions'}
+						];
+						refreshCount(tableArr);
+						console.log("Projects found. Refresh Count");
+						loadFinalGui();
+					}
+				});
+			} else {
+				console.log("Server has changed");
+				reIndexServer();
+			}
 		} else {
-			var tableArr = [
-				{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
-				{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'},
-				{'name' : 'groups', 'div' : 'group', 'label' : 'groups'},
-				{'name' : 'projects', 'div' : 'project', 'label' : 'projects'},
-				{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'},
-				{'name' : 'views', 'div' : 'view', 'label' : 'views'},
-				{'name' : 'pubdatasources', 'div' : 'pubdatasource', 'label' : 'published data sources'},
-				{'name' : 'embeddatasources', 'div' : 'embeddatasource', 'label' : 'workbook data sources'},
-				{'name' : 'tasks', 'div' : 'task', 'label' : 'tasks'},
-				{'name' : 'subscriptions', 'div' : 'subscription', 'label' : 'subscriptions'}
-			];
-			refreshCount(tableArr);
-			loadFinalGui();
+			console.log("No previous server found");
+			reIndexServer();
 		}
 	});
 }
@@ -80,11 +97,48 @@ function reIndexServer() {
 	document.getElementById("loadingMsg").hidden = false;
 	document.body.className = 'yay-hide';
 	tableauDB.clearData(["projects","taskSchedules","sitestats","subscriptions","pubdatasources","tasks","embeddatasources","groups","siteUsers","serverUsers","views","subscriptionSchedules","sites","workbooks","viewThumbnails"]);
+	tableauDB.fetchIndexRecords(1,"servers","currentServer", function(currentServer) {
+		if (currentServer.length > 0) {
+			var cs = currentServer[0];
+			tableauDB.updateCurrentServer(cs.serverUrl, cs, 0, function(prevServer) {
+				console.log("Previous Server Updated");
+				getServerInfo_noAPI(function(server) {
+					tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
+						console.log("Current Server Updated");
+					})
+				});
+			});
+		} else {
+			getServerInfo_noAPI(function(server) {
+				tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
+					console.log("Current Server Updated");
+				})
+			});
+		}
+	});
 	$('.carousel').slick('unslick');
 	$('.carousel').remove();
 	$('#guiContainer').remove();
 	getServerUsers_noAPI();
 	getSites_noAPI();
+}
+
+function getServerInfo_noAPI(callback){
+	var settings = {
+		"async": false,
+		"crossDomain": true,
+		"url": serverURL+"/vizportal/api/web/v1/getSessionInfo",
+		"method": "POST",
+		"headers": {
+			"x-xsrf-token": xsrf_token
+		},
+		"data": "{\"method\":\"getSessionInfo\",\"params\":{}}"
+	}
+	$.ajax(settings).done(function (response) {
+		tableauDB.createServer(serverURL,response.result, function(server) {
+			callback(server);
+		});
+	});
 }
 
 function getSites_noAPI(){
@@ -784,6 +838,7 @@ function initiliseStatsTiles() {
 		document.body.appendChild(contentWrapper);
 		loadIndexModal();
 		loadEmailModal();
+		loadWDCModal();
 		//var container = document.querySelector('#statsContainer');
 		var iso = new Isotope( statsContainer );
 		iso.arrange({
@@ -791,7 +846,7 @@ function initiliseStatsTiles() {
 			itemSelector: '.item',
 			layoutMode: 'masonry',
 			masonry: {
-				columnWidth: 210,
+				columnWidth: 230,
 				gutter: 10,
 				isFitWidth: true
 			}
@@ -840,6 +895,95 @@ function initiliseStatsTiles() {
 function loadFinalGui () {
 	var guiContainer = document.createElement("div");
 	guiContainer.setAttribute('id','guiContainer');
+
+	var favDiv = document.createElement("div");
+	favDiv.setAttribute('class','slider');
+	favDiv.setAttribute('id','favorites');
+	//trendingDiv.innerHTML = "<div class='slider'><div class='countTitle'>trending</div>";
+	var favCarouselDiv = document.createElement("div");
+	favCarouselDiv.setAttribute('class','favCarousel');
+	favDiv.appendChild(favCarouselDiv);
+	guiContainer.appendChild(favDiv);
+	var favleft = $('<i id="favLeft" class="fa fa-arrow-circle-left"></i>').appendTo(favDiv),
+    favright = $('<i id="favRight" class="fa fa-arrow-circle-right"></i>').appendTo(favDiv);
+	tableauDB.fetchIndexRange([1], [2], "views", "favorite", function(favViews) {
+		if (favViews.length > 0) {
+			var favViewTotal = favViews.length;
+			var favViewCount = 0;
+			for (var i = 0; i < favViewTotal; i++) {
+				var currentView = favViews[i];
+				tableauDB.fetchRecords(currentView.id, "viewThumbnails", function (favImage) {
+					var thumbnailSpan = document.createElement("span");
+					var thumbnailDiv = document.createElement("div");
+					var thumbnailLink = document.createElement("a");
+					var titleDiv = document.createElement("div");
+					var thumbnailImg = document.createElement("img");
+					if (favImage[0]) {
+						thumbnailImg.setAttribute("src", favImage[0].image);
+					}
+					thumbnailSpan.setAttribute("class", "viewThumbnailSpan");
+					thumbnailDiv.setAttribute("class", "viewThumbnailDiv");
+					thumbnailDiv.appendChild(thumbnailImg);
+					if (favImage[0]) {
+						titleDiv.innerHTML = favImage[0].name;
+					}
+					thumbnailSpan.appendChild(thumbnailDiv);
+					thumbnailSpan.appendChild(titleDiv);
+
+					thumbnailSpan.addEventListener('click', function() {
+						var link = serverURL + "/#/site/" + favImage[0].siteUrl + "/views/" +favImage[0].path+"?:embed=y";
+						if (currentSiteUrl != favImage[0].siteUrl) {
+							switchSiteResource(favImage[0].siteUrl, function(response) {
+								var win = gui.Window.open (link, {
+					  			position: 'center',
+					  			width: 901,
+					  			height: 600,
+									toolbar: false,
+									title: "Project Yupana, Redirecting - The Information Lab"
+								});
+								win.on ('loaded', function(){
+
+								});
+							});
+						} else {
+							var win = gui.Window.open (link, {
+								position: 'center',
+								width: 901,
+								height: 600,
+								toolbar: false,
+								title: "Project Yupana, Redirecting - The Information Lab"
+							});
+							win.on ('loaded', function(){
+
+							});
+						}
+
+					});
+
+					$('.favCarousel').append(thumbnailSpan);
+					favViewCount++;
+					if(favViewCount == favViewTotal) {
+						$('.favCarousel').slick({
+							slidesToShow: 4,
+						  slidesToScroll: 3,
+							adaptiveHeight: true,
+							variableWidth: true,
+							draggable: true,
+							arrows: true,
+							prevArrow: $('#favLeft'),
+							nextArrow: $('#favRight')
+						});
+						$('#favorites').append("<div class='countTitle'>your favorites</div>");
+					}
+		      //URL.revokeObjectURL(imgURL);
+				});
+				//carouselDiv.appendChild(thumbnailDiv);
+			}
+		} else {
+			$('#favorites').remove();
+		}
+	});
+
 	var trendingDiv = document.createElement("div");
 	trendingDiv.setAttribute('class','slider');
 	trendingDiv.setAttribute('id','trending');
@@ -847,6 +991,8 @@ function loadFinalGui () {
 	carouselDiv.setAttribute('class','trendingCarousel');
 	trendingDiv.appendChild(carouselDiv);
 	guiContainer.appendChild(trendingDiv);
+	var left = $('<i id="trendLeft" class="fa fa-arrow-circle-left"></i>').appendTo(trendingDiv),
+    right = $('<i id="trendRight" class="fa fa-arrow-circle-right"></i>').appendTo(trendingDiv);
 	$('.content-wrap').append(guiContainer);
 	tableauDB.fetchIndexRange([1], [999999999999], "views", "trending", function(views) {
 		if (views.length > 0) {
@@ -910,12 +1056,14 @@ function loadFinalGui () {
 					viewCount++;
 					if(viewCount == viewLength) {
 						$('.trendingCarousel').slick({
-						  slidesToShow: 10,
+						  slidesToShow: 5,
 						  slidesToScroll: 3,
 							adaptiveHeight: true,
 							variableWidth: true,
 							draggable: true,
-							arrows: false
+							arrows: true,
+							prevArrow: $('#trendLeft'),
+							nextArrow: $('#trendRight')
 						});
 						$('#trending').append("<div class='countTitle'>what's trending</div>");
 					}
@@ -925,90 +1073,6 @@ function loadFinalGui () {
 			}
 		} else {
 			$('#trending').remove();
-		}
-	});
-
-	var favDiv = document.createElement("div");
-	favDiv.setAttribute('class','slider');
-	favDiv.setAttribute('id','favorites');
-	//trendingDiv.innerHTML = "<div class='slider'><div class='countTitle'>trending</div>";
-	var favCarouselDiv = document.createElement("div");
-	favCarouselDiv.setAttribute('class','favCarousel');
-	favDiv.appendChild(favCarouselDiv);
-	guiContainer.appendChild(favDiv);
-	tableauDB.fetchIndexRange([1], [2], "views", "favorite", function(favViews) {
-		if (favViews.length > 0) {
-			var favViewTotal = favViews.length;
-			var favViewCount = 0;
-			for (var i = 0; i < favViewTotal; i++) {
-				var currentView = favViews[i];
-				tableauDB.fetchRecords(currentView.id, "viewThumbnails", function (favImage) {
-					var thumbnailSpan = document.createElement("span");
-					var thumbnailDiv = document.createElement("div");
-					var thumbnailLink = document.createElement("a");
-					var titleDiv = document.createElement("div");
-					var thumbnailImg = document.createElement("img");
-					if (favImage[0]) {
-						thumbnailImg.setAttribute("src", favImage[0].image);
-					}
-					thumbnailSpan.setAttribute("class", "viewThumbnailSpan");
-					thumbnailDiv.setAttribute("class", "viewThumbnailDiv");
-					thumbnailDiv.appendChild(thumbnailImg);
-					if (favImage[0]) {
-						titleDiv.innerHTML = favImage[0].name;
-					}
-					thumbnailSpan.appendChild(thumbnailDiv);
-					thumbnailSpan.appendChild(titleDiv);
-
-					thumbnailSpan.addEventListener('click', function() {
-						var link = serverURL + "/#/site/" + favImage[0].siteUrl + "/views/" +favImage[0].path+"?:embed=y";
-						if (currentSiteUrl != favImage[0].siteUrl) {
-							switchSiteResource(favImage[0].siteUrl, function(response) {
-								var win = gui.Window.open (link, {
-					  			position: 'center',
-					  			width: 901,
-					  			height: 600,
-									toolbar: false,
-									title: "Project Yupana, Redirecting - The Information Lab"
-								});
-								win.on ('loaded', function(){
-
-								});
-							});
-						} else {
-							var win = gui.Window.open (link, {
-								position: 'center',
-								width: 901,
-								height: 600,
-								toolbar: false,
-								title: "Project Yupana, Redirecting - The Information Lab"
-							});
-							win.on ('loaded', function(){
-
-							});
-						}
-
-					});
-
-					$('.favCarousel').append(thumbnailSpan);
-					favViewCount++;
-					if(favViewCount == favViewTotal) {
-						$('.favCarousel').slick({
-						  slidesToShow: 10,
-						  slidesToScroll: 3,
-							adaptiveHeight: true,
-							variableWidth: true,
-							draggable: true,
-							arrows: false
-						});
-						$('#favorites').append("<div class='countTitle'>your favorites</div>");
-					}
-		      //URL.revokeObjectURL(imgURL);
-				});
-				//carouselDiv.appendChild(thumbnailDiv);
-			}
-		} else {
-			$('#favorites').remove();
 		}
 	});
 
@@ -1177,7 +1241,7 @@ function loadNavBar () {
 	reindexa.setAttribute('href','#');
 	reindexa.setAttribute('data-toggle','modal');
 	reindexa.setAttribute('data-target','#reIndex');
-	reindexa.innerHTML = "<i class='fa fa-envelope-o'></i> Reindex Server";
+	reindexa.innerHTML = "<i class='fa fa-refresh'></i> Reindex Server";
 	reindex.appendChild(reindexa);
 	menuList.appendChild(reindex);
 	var exportEmail = document.createElement('li');
@@ -1186,12 +1250,14 @@ function loadNavBar () {
 	exportEmaila.setAttribute('data-toggle','modal');
 	exportEmaila.setAttribute('data-target','#myModal');
 	exportEmaila.innerHTML = "<i class='fa fa-envelope-o'></i> Email Stats";
-	exportEmail.appendChild(exportEmaila);
-	menuList.appendChild(exportEmail);
+	/*exportEmail.appendChild(exportEmaila);
+	menuList.appendChild(exportEmail);*/
 	var exportFile = document.createElement('li');
 	var exportFilea = document.createElement('a');
 	exportFilea.setAttribute('href','#');
-	exportFilea.innerHTML = "<i class='fa fa-table'></i> Export Files";
+	exportFilea.setAttribute('data-toggle','modal');
+	exportFilea.setAttribute('data-target','#wdcModal');
+	exportFilea.innerHTML = "<i class='fa fa-table'></i> Analyse in Tableau";
 	exportFile.appendChild(exportFilea);
 	menuList.appendChild(exportFile);
 	nanoContent.appendChild(menuList);
@@ -1317,6 +1383,49 @@ function loadEmailModal() {
 	dataSubmit.addEventListener('click', sendData);
 	formDiv.appendChild(dataSubmit);
 	modalBody.appendChild(formDiv);
+	modalContent.appendChild(modalBody);
+	var modalFooter = document.createElement("div");
+	modalFooter.setAttribute('class','modal-footer');
+	modalFooter.innerHTML = "<button type='button' class='btn btn-default' data-dismiss='modal'>Close</button>";
+	modalContent.appendChild(modalFooter);
+	modalDialog.appendChild(modalContent);
+	modalDiv.appendChild(modalDialog);
+	document.body.appendChild(modalDiv);
+}
+
+function loadWDCModal() {
+	var modalDiv = document.createElement("div");
+	modalDiv.setAttribute('class','modal fade');
+	modalDiv.setAttribute('id','wdcModal');
+	modalDiv.setAttribute('tabindex','-1');
+	modalDiv.setAttribute('role','dialog');
+	modalDiv.setAttribute('aria-labelledby','wdcModalLabel');
+	modalDiv.setAttribute('aria-hidden','true');
+	var modalDialog = document.createElement("div");
+	modalDialog.setAttribute('class','modal-dialog');
+	var modalContent = document.createElement("div");
+	modalContent.setAttribute('class','modal-content');
+	var modalHeader = document.createElement("div");
+	modalHeader.setAttribute('class','modal-header');
+	var modalCloseIcon = document.createElement("button");
+	modalCloseIcon.setAttribute('class','close');
+	modalCloseIcon.setAttribute('data-dismiss','modal');
+	modalCloseIcon.setAttribute('aria-label','Close');
+	var modalCloseSpan = document.createElement("span");
+	modalCloseSpan.setAttribute('aria-hidden','true');
+	modalCloseSpan.innerHTML = "&times;";
+	modalCloseIcon.appendChild(modalCloseSpan);
+	modalHeader.appendChild(modalCloseIcon);
+	var modalTitle = document.createElement("h4");
+	modalTitle.setAttribute('class','modal-title');
+	modalTitle.setAttribute('id','wdcModalLabel');
+	modalTitle.innerHTML = "Export Data via Web Data Connector";
+	modalHeader.appendChild(modalTitle);
+	modalContent.appendChild(modalHeader);
+	var modalBody = document.createElement("div");
+	modalBody.setAttribute('class','modal-body');
+	var wdcHTML = "To access the data held by Yupana for analysis:<ol><li>open Tableau Desktop (version 9.1 or greater)</li><li>Select 'Web Data Connector' from the Connect to a Server list</li><li>Enter http://localhost:8000 into the address bar & follow further instructions</li></ol><img src='./images/wdc.png' width='570'/>";
+	modalBody.innerHTML = wdcHTML;
 	modalContent.appendChild(modalBody);
 	var modalFooter = document.createElement("div");
 	modalFooter.setAttribute('class','modal-footer');

@@ -15,6 +15,9 @@ var tableauDB = (function () {
 			e.target.transaction.onerror = tDB.onerror;
 
 			// Delete the old datastore.
+			if (db.objectStoreNames.contains('servers')) {
+				db.deleteObjectStore('servers');
+			}
 			if (db.objectStoreNames.contains('sites')) {
 				db.deleteObjectStore('sites');
 			}
@@ -58,6 +61,10 @@ var tableauDB = (function () {
 				db.deleteObjectStore('viewThumbnails');
 			}
 			// Create a new datastore.
+			var store = db.createObjectStore('servers', {
+					keyPath : 'serverUrl'
+				});
+			store.createIndex("currentServer","currentServer",{unique:false});
 			var store = db.createObjectStore('sites', {
 					keyPath : 'id'
 				});
@@ -269,7 +276,61 @@ var tableauDB = (function () {
 
 		cursorRequest.onerror = tDB.onerror;
 	};
+	/**
+	 * Create a new server
+	*/
+	tDB.createServer = function (serverUrl, serverObj, callback) {
+		// Get a reference to the db.
+		var db = datastore;
 
+		// Initiate a new transaction.
+		var transaction = db.transaction(['servers'], 'readwrite');
+
+		// Get the datastore.
+		var objStore = transaction.objectStore('servers');
+
+		var server = serverObj;
+		server.serverUrl = serverUrl;
+		server.currentServer = 0;
+		// Create the datastore request.
+		var request = objStore.put(server);
+
+		// Handle a successful datastore put.
+		request.onsuccess = function (e) {
+			// Execute the callback function.
+			callback(server);
+		};
+
+		// Handle errors.
+		request.onerror = tDB.onerror;
+	};
+	/**
+	 * Update Server
+	*/
+	tDB.updateCurrentServer = function (serUrl, serverObj, current, callback) {
+
+		var db = datastore;
+		var transaction = db.transaction(['servers'], 'readwrite');
+		var objStore = transaction.objectStore('servers');
+
+		var delRequest = objStore.delete(serUrl);
+
+		delRequest.onsuccess = function(event){
+			var db = datastore;
+			var transaction = db.transaction(['servers'], 'readwrite');
+			var objStore = transaction.objectStore('servers');
+			var server = serverObj;
+			server.serverUrl = serUrl;
+			server.currentServer = parseInt(current);
+			var putRequest = objStore.put(server);
+			putRequest.onsuccess = function (e) {
+				callback(server);
+			};
+			// Handle errors.
+			putRequest.onerror = tDB.onerror;
+		}
+		delRequest.onerror = tDB.onerror;
+	}
 	/**
 	 * Create a new site
 	*/

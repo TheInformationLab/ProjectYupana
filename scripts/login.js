@@ -20,7 +20,7 @@ function initializeScreen(){
 	loadingdiv.appendChild(loaddiv);
 	document.body.appendChild(loadingdiv);
 
-	checkLoggedIn();
+	tableauDB.open(checkLoggedIn);
 }
 
 function checkLoggedIn() {
@@ -59,8 +59,9 @@ function checkLoggedIn() {
 						serURL.setAttribute('style','color:#BDBDBD;font-style: italic;');
 					}
 				});
+				$('#serURL').val('https://beta.theinformationlab.co.uk');
 			} else {
-				tableauDB.open(initialiseYupana);
+				initialiseYupana();
 			}
 		};
 		req.send(null);
@@ -68,30 +69,56 @@ function checkLoggedIn() {
 				console.log("User not logged in");
 				var div_serverLogin = document.createElement("div");
 				div_serverLogin.setAttribute('id','serverLogin');
-				var serURL = document.createElement("input");
+				var serURL = document.createElement("div");
+				//var serURL = document.createElement("input");
 				serURL.setAttribute('id','serURL');
-				serURL.setAttribute('type','text');
-				serURL.setAttribute('style','color:#BDBDBD;font-style: italic;');
+				//serURL.setAttribute('type','text');
+				//serURL.setAttribute('style','color:#BDBDBD;font-style: italic;');
 				var urlSubmit = document.createElement("button");
 				urlSubmit.setAttribute('id','urlSubmit');
 				urlSubmit.innerHTML = "Submit";
 				urlSubmit.addEventListener('click', serURLSubmit);
 				div_serverLogin.appendChild(serURL);
-				div_serverLogin.appendChild(urlSubmit);
+				//div_serverLogin.appendChild(urlSubmit);
 				document.body.appendChild(div_serverLogin);
-				$('#serURL').val('Server URL');
-				$('#serURL').focusin(function() {
-					if ($('#serURL').val()=='Server URL') {
-						$('#serURL').val('');
-						serURL.setAttribute('style','');
-					}
-				});
-				$('#serURL').focusout(function() {
-					if ($('#serURL').val()=='') {
-						$('#serURL').val('Server URL');
-						serURL.setAttribute('style','color:#BDBDBD;font-style: italic;');
-					}
-				});
+				tableauDB.fetchRecords(0,"servers",function(servers) {
+					var serverList = [];
+					for (var i = 0; i < servers.length; i++) {
+						serverList.push(servers[i].serverUrl);
+					};
+					var ms = $('#serURL').magicSuggest({
+						allowFreeEntries : true,
+						placeholder : "Tableau Server URL",
+						data: serverList,
+						highlight: false,
+						maxSelection: 1,
+						vtype: 'url',
+						vregex: /[https]{4,5}:\/\/[\w\.]*/
+						//infoMsgCls: serUrlInfo
+					});
+					$(ms).on('selectionchange', function(e,m) {
+						if (this.getValue().length == 0) {
+							if($('#serverName')){
+								$('#serverName').remove();
+							}
+							if($('#username')){
+								$('#username').remove();
+							}
+							if($('#password')){
+								$('#password').remove();
+							}
+							if($('#login')){
+								$('#login').remove();
+							}
+							$('#urlSubmit').show();
+						} else {
+							//$('#urlSubmit').hide();
+							console.log(this.getValue()[0]);
+							serverURL = this.getValue()[0];
+							serURLSubmit();
+						}
+					});
+    		});
 			}
 };
 
@@ -108,10 +135,9 @@ function getUrlVars(url) {
 function serURLSubmit(){
 	//Disable submit button
 	console.log("serURLSubmit: starting");
-	document.querySelector('#urlSubmit').hidden = true;
+	//document.querySelector('#urlSubmit').hidden = true;
 
 	//Set serverURL variable
-	serverURL = document.querySelector('#serURL').value;
 	//chrome.storage.sync["serverURL"] = serverURL;
 
 	//Get server info
@@ -128,15 +154,16 @@ function serURLSubmit(){
 		var serverLogo = response.result.customization.customLogoPath;
 		if (serverLogo){
 			var imageURL = serverURL + serverLogo;
-			console.log(imageURL);
-			var logoDiv = document.createElement("div");
-			var logoIMG = document.createElement("img");
-			logoDiv.setAttribute('class','serverLogo');
-			logoDiv.setAttribute('id','serverLogo');
-			logoIMG.setAttribute('src',imageURL);
-			logoDiv.appendChild(logoIMG);
-			document.body.appendChild(logoDiv);
+		} else {
+			var imageURL = './images/til.png';
 		}
+		var logoDiv = document.createElement("div");
+		var logoIMG = document.createElement("img");
+		logoDiv.setAttribute('class','serverLogo');
+		logoDiv.setAttribute('id','serverLogo');
+		logoIMG.setAttribute('src',imageURL);
+		logoDiv.appendChild(logoIMG);
+		document.body.appendChild(logoDiv);
 		if (response.result.authenticationType.type == "SAML") {
 			console.log("SAML Login");
 			var win = gui.Window.open (serverURL+"/vizportal/api/saml?dest=%2F", {
@@ -191,7 +218,7 @@ function serURLSubmit(){
 			userField.setAttribute('style','color:#BDBDBD;font-style: italic;');
 			var passField = document.createElement("input");
 			passField.setAttribute('id','password');
-			passField.setAttribute('type','password');
+			passField.setAttribute('type','text');
 			passField.setAttribute('style','color:#BDBDBD;font-style: italic;');
 			var loginBtn = document.createElement("button");
 			loginBtn.setAttribute('id','login');

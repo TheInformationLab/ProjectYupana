@@ -47,18 +47,16 @@ div.ajax-loading {
 }
 
 #serverLogin{
-	width: 300px;
+	width: 450px;
 	text-align: center;
 	position: absolute;
 	left: 50%;
-	margin-left: -150px;
+	margin-left: -225px;
 	top: 300px;
 }
 
 #serURL{
-	width: 300px;
-	height: 25px;
-	padding-left: 5px;
+	width: 450px;
 	font-family: 'Droid Sans', sans-serif;
 	margin-bottom: 5px;
 	border: 1px solid #BDBDBD;
@@ -67,7 +65,7 @@ div.ajax-loading {
 #urlSubmit {
 	padding: 10px;
 	margin-top: 5px;
-	width: 305px;
+	width: 450px;
 	background-color: #E97D32;
 	font-size: 14px;
 	color: white;
@@ -75,22 +73,18 @@ div.ajax-loading {
 	border-radius: 4px;
 }
 
-#username{
-	width: 300px;
-	height: 25px;
-	padding-left: 5px;
+#username,#password{
+	width: 450px;
+	height: 30px;
+	padding: 5px 5px 5px 5px;
 	font-family: 'Droid Sans', sans-serif;
 	margin-bottom: 5px;
 	border: 1px solid #BDBDBD;
+	border-radius: 4px;
 }
 
-#password{
-	width: 300px;
-	height: 25px;
-	padding-left: 5px;
-	font-family: 'Droid Sans', sans-serif;
-	margin-bottom: 5px;
-	border: 1px solid #BDBDBD;
+.ms-helper {
+	visibility: hidden;
 }
 
 #serURL:hover,#username:hover,#password:hover{
@@ -100,7 +94,7 @@ div.ajax-loading {
 #login {
 	padding: 10px;
 	margin-top: 5px;
-	width: 305px;
+	width: 450px;
 	background-color: #E97D32;
 	font-size: 14px;
 	color: white;
@@ -129,8 +123,8 @@ div.ajax-loading {
 }
 
 .item {
-	width: 200px;
-	height:50px;
+	width: 220px;
+	height:60px;
 	border-bottom: 3px solid #E97D32;
 	background-color:#FFF;
 	margin-bottom: 10px;
@@ -152,6 +146,32 @@ div.ajax-loading {
 .slider:hover{
   cursor: pointer;
   border-bottom: 3px solid #0194FE;
+}
+
+.fa-arrow-circle-left{
+	position: absolute;
+	z-index: 9;
+	left: 0;
+	top: 100px;
+	font-size: 4pc;
+	color: rgba(233,125,50,0.0);
+}
+
+.fa-arrow-circle-right{
+	position: absolute;
+	z-index: 9;
+	right: 0;
+	top: 100px;
+	font-size: 4pc;
+	color: rgba(233,125,50,0.0);
+}
+
+.slider:hover .fa-arrow-circle-right,.slider:hover .fa-arrow-circle-left{
+  color: rgba(233,125,50,0.1);
+}
+
+.slider:hover .fa-arrow-circle-right:hover,.slider:hover .fa-arrow-circle-left:hover{
+  color: rgba(233,125,50,0.3);
 }
 
 .viewThumbnailSpan {
@@ -188,16 +208,16 @@ div.ajax-loading {
 }
 
 .countValue {
-	width: 60%;
+	width: 58%;
 	position: absolute;
 	left: 0;
 	bottom: 0;
 }
 
 .countTitle {
-	width: 40%;
+	width: 42%;
 	position: absolute;
-	right: 0;
+	right: 5px;
 	bottom: 0;
 	text-align: right;
 }
