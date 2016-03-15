@@ -5,7 +5,7 @@ var tableauDB = (function () {
 	tDB.open = function (callback) {
 
 		// Open a connection to the datastore.
-		var request = indexedDB.open('tableau', 1);
+		var request = indexedDB.open('tableau', 2);
 
 		// Handle datastore upgrades.
 		request.onupgradeneeded = function (e) {
@@ -845,7 +845,7 @@ var tableauDB = (function () {
 			}
 	};
 
-	tDB.clearData = function (tableArr) {
+	tDB.clearData = function (tableArr, callback) {
 		var db = datastore;
 		if(tableArr.length > 0) {
 			for(var i = 0; i < tableArr.length; i++) {
@@ -859,7 +859,7 @@ var tableauDB = (function () {
 			  var objectStoreRequest = objectStore.clear();
 
 			  objectStoreRequest.onsuccess = function(event) {
-			    //console.log(tableArr[i] + " cleared");
+			    callback();
 			  };
 				objectStoreRequest.onerror = tDB.onerror;
 			}
