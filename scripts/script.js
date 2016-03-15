@@ -31,26 +31,33 @@ function initialiseYupana(server) {
 			var cs = currentServer[0];
 			console.log(cs);
 			if (serverURL == cs.serverUrl) {
-				tableauDB.fetchRecords(0,"projects", function(projects) {
-					if(projects.length == 0) {
-						console.log("No projects found. ReIndex");
-						reIndexServer();
+				getServerInfo_noAPI(function(server) {
+					if (server.user.id == cs.user.id) {
+						tableauDB.fetchRecords(0,"projects", function(projects) {
+							if(projects.length == 0) {
+								console.log("No projects found. ReIndex");
+								reIndexServer();
+							} else {
+								var tableArr = [
+									{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
+									{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'},
+									{'name' : 'groups', 'div' : 'group', 'label' : 'groups'},
+									{'name' : 'projects', 'div' : 'project', 'label' : 'projects'},
+									{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'},
+									{'name' : 'views', 'div' : 'view', 'label' : 'views'},
+									{'name' : 'pubdatasources', 'div' : 'pubdatasource', 'label' : 'published data sources'},
+									{'name' : 'embeddatasources', 'div' : 'embeddatasource', 'label' : 'workbook data sources'},
+									{'name' : 'tasks', 'div' : 'task', 'label' : 'tasks'},
+									{'name' : 'subscriptions', 'div' : 'subscription', 'label' : 'subscriptions'}
+								];
+								refreshCount(tableArr);
+								console.log("Projects found. Refresh Count");
+								loadFinalGui();
+							}
+						});
 					} else {
-						var tableArr = [
-							{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
-							{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'},
-							{'name' : 'groups', 'div' : 'group', 'label' : 'groups'},
-							{'name' : 'projects', 'div' : 'project', 'label' : 'projects'},
-							{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'},
-							{'name' : 'views', 'div' : 'view', 'label' : 'views'},
-							{'name' : 'pubdatasources', 'div' : 'pubdatasource', 'label' : 'published data sources'},
-							{'name' : 'embeddatasources', 'div' : 'embeddatasource', 'label' : 'workbook data sources'},
-							{'name' : 'tasks', 'div' : 'task', 'label' : 'tasks'},
-							{'name' : 'subscriptions', 'div' : 'subscription', 'label' : 'subscriptions'}
-						];
-						refreshCount(tableArr);
-						console.log("Projects found. Refresh Count");
-						loadFinalGui();
+						console.log("User has changed");
+						reIndexServer();
 					}
 				});
 			} else {
@@ -96,31 +103,32 @@ function reIndexServer() {
 	$(".ajax-loading").show();
 	document.getElementById("loadingMsg").hidden = false;
 	document.body.className = 'yay-hide';
-	tableauDB.clearData(["projects","taskSchedules","sitestats","subscriptions","pubdatasources","tasks","embeddatasources","groups","siteUsers","serverUsers","views","subscriptionSchedules","sites","workbooks","viewThumbnails"]);
-	tableauDB.fetchIndexRecords(1,"servers","currentServer", function(currentServer) {
-		if (currentServer.length > 0) {
-			var cs = currentServer[0];
-			tableauDB.updateCurrentServer(cs.serverUrl, cs, 0, function(prevServer) {
-				console.log("Previous Server Updated");
+	tableauDB.clearData(["projects","taskSchedules","sitestats","subscriptions","pubdatasources","tasks","embeddatasources","groups","siteUsers","serverUsers","views","subscriptionSchedules","sites","workbooks","viewThumbnails"], function(){
+		tableauDB.fetchIndexRecords(1,"servers","currentServer", function(currentServer) {
+			if (currentServer.length > 0) {
+				var cs = currentServer[0];
+				tableauDB.updateCurrentServer(cs.serverUrl, cs, 0, function(prevServer) {
+					console.log("Previous Server Updated");
+					getServerInfo_noAPI(function(server) {
+						tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
+							console.log("Current Server Updated");
+						})
+					});
+				});
+			} else {
 				getServerInfo_noAPI(function(server) {
 					tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
 						console.log("Current Server Updated");
 					})
 				});
-			});
-		} else {
-			getServerInfo_noAPI(function(server) {
-				tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
-					console.log("Current Server Updated");
-				})
-			});
-		}
+			}
+		});
+		$('.carousel').slick('unslick');
+		$('.carousel').remove();
+		$('#guiContainer').remove();
+		getServerUsers_noAPI();
+		getSites_noAPI();
 	});
-	$('.carousel').slick('unslick');
-	$('.carousel').remove();
-	$('#guiContainer').remove();
-	getServerUsers_noAPI();
-	getSites_noAPI();
 }
 
 function getServerInfo_noAPI(callback){
@@ -184,8 +192,19 @@ function switchSite() {
 			switchSiteLogin(sitesList[curCurrentSite].urlName);
 	} else if (curCurrentSite == siteCount - 1 && curUserCount == -curCurrentSite && curGroupCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curPubDataCount == -curCurrentSite && curEmbedDataCount == -curCurrentSite && curProjectCount == -curCurrentSite && curTaskCount == -curCurrentSite && curSubscriptionCount == -curCurrentSite) {
 		//console.log("FINISHED LOADING!!");
-		refreshCount([{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'}]);
-		refreshCount([{'name' : 'sites', 'div' : 'site', 'label' : 'sites'}]);
+		var tableArr = [
+			{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
+			{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'},
+			{'name' : 'groups', 'div' : 'group', 'label' : 'groups'},
+			{'name' : 'projects', 'div' : 'project', 'label' : 'projects'},
+			{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'},
+			{'name' : 'views', 'div' : 'view', 'label' : 'views'},
+			{'name' : 'pubdatasources', 'div' : 'pubdatasource', 'label' : 'published data sources'},
+			{'name' : 'embeddatasources', 'div' : 'embeddatasource', 'label' : 'workbook data sources'},
+			{'name' : 'tasks', 'div' : 'task', 'label' : 'tasks'},
+			{'name' : 'subscriptions', 'div' : 'subscription', 'label' : 'subscriptions'}
+		];
+		refreshCount(tableArr);
 		loadFinalGui();
 		$('.ajax-loading').hide();
 		/*document.getElementById("loadingMsg").hidden = true;
@@ -994,7 +1013,7 @@ function loadFinalGui () {
 	var left = $('<i id="trendLeft" class="fa fa-arrow-circle-left"></i>').appendTo(trendingDiv),
     right = $('<i id="trendRight" class="fa fa-arrow-circle-right"></i>').appendTo(trendingDiv);
 	$('.content-wrap').append(guiContainer);
-	tableauDB.fetchIndexRange([1], [999999999999], "views", "trending", function(views) {
+	tableauDB.fetchIndexRange([2], [999999999999], "views", "trending", function(views) {
 		if (views.length > 0) {
 			var orderViews = views.reverse();
 			var viewLength = orderViews.length;
