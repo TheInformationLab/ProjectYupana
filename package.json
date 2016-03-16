@@ -1,11 +1,11 @@
 {
-  "name": "Project Yupana",
+  "name": "Yupana",
   "description": "Project Yupana by The Information Lab. Author Craig Bloodworth. License GPL3",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "main": "app.html",
   "window": {
     "title": "Project Yupana - The Information Lab",
-    "toolbar": true,
+    "toolbar": false,
     "frame": true,
     "position": "mouse",
     "width": 1100,
