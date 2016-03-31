@@ -1,13 +1,58 @@
-var workgroup_session_id = "", xsrf_token = "", currentSiteLuid = "", apiLevel = 0, siteCount = 0, userCount = 0, groupCount = 0, viewCount = 0, workbookCount = 0, projectCount = 0, dataPubCount = 0, dataEmbedCount = 0, taskCount = 0, subscriptionCount = 0, curUserCount = 0, curGroupCount = 0, curViewCount = 0, curWorkbookCount = 0, curProjectCount = 0, curPubDataCount = 0, curEmbedDataCount = 0, curTaskCount = 0, curSubscriptionCount = 0, curCurrentSite = 0, sitesList = [], currentSiteId = "", currentSiteName = "", currentSiteUrl = "";
-
-	var gui = require('nw.gui');
-	if (process.platform === "darwin") {
-	  var mb = new gui.Menu({type: 'menubar'});
-	  mb.createMacBuiltin('RoboPaint', {
-	    hideEdit: false,
-	  });
-	  gui.Window.get().menu = mb;
+var winston = require('winston');
+winston.loggers.add('login', {
+	console: {
+		level: 'error',
+		colorize: true,
+		label: 'login.js'
+	},
+	file: {
+		level: 'debug',
+		filename: 'logs/yupana.log',
+		label: 'login.js'
 	}
+});
+winston.loggers.add('db', {
+	console: {
+		level: 'error',
+		colorize: true,
+		label: 'db.js'
+	},
+	file: {
+		level: 'debug',
+		filename: 'logs/yupana.log',
+		label: 'db.js'
+	}
+});
+
+winston.add(winston.transports.File, {
+    filename: 'logs/yupana-exceptions.log',
+    handleExceptions: true,
+    humanReadableUnhandledException: true
+});
+
+var noAPI = require('./scripts/noAPIFunctions.js');
+var async = require('async');
+
+var workgroup_session_id = "", xsrf_token = "", currentSiteLuid = "", apiLevel = 0, siteCount = 0, userCount = 0, groupCount = 0, viewCount = 0, workbookCount = 0, projectCount = 0, dataPubCount = 0, dataEmbedCount = 0, taskCount = 0, subscriptionCount = 0, sitesList = [], currentSiteId = "", currentSiteName = "", currentSiteUrl = "";
+
+var gui = require('nw.gui');
+var switches = gui.App.argv;
+if (process.platform === "darwin") {
+  var mb = new gui.Menu({type: 'menubar'});
+  mb.createMacBuiltin('Yupana', {
+    hideEdit: false,
+  });
+  gui.Window.get().menu = mb;
+}
+if (switches.length > 0) {
+  for (i=0;i<switches.length;i++) {
+    switch(switches[i]) {
+      case '--debug':
+        gui.Window.get().showDevTools();
+        break;
+    }
+  }
+}
 
 function initialiseYupana(server) {
 	checkAPIAccess();
@@ -103,31 +148,35 @@ function reIndexServer() {
 	$(".ajax-loading").show();
 	document.getElementById("loadingMsg").hidden = false;
 	document.body.className = 'yay-hide';
+	var i = 0;
 	tableauDB.clearData(["projects","taskSchedules","sitestats","subscriptions","pubdatasources","tasks","embeddatasources","groups","siteUsers","serverUsers","views","subscriptionSchedules","sites","workbooks","viewThumbnails"], function(){
-		tableauDB.fetchIndexRecords(1,"servers","currentServer", function(currentServer) {
-			if (currentServer.length > 0) {
-				var cs = currentServer[0];
-				tableauDB.updateCurrentServer(cs.serverUrl, cs, 0, function(prevServer) {
-					console.log("Previous Server Updated");
+		if (i == 0) {
+			tableauDB.fetchIndexRecords(1,"servers","currentServer", function(currentServer) {
+				if (currentServer.length > 0) {
+					var cs = currentServer[0];
+					tableauDB.updateCurrentServer(cs.serverUrl, cs, 0, function(prevServer) {
+						console.log("Previous Server Updated");
+						getServerInfo_noAPI(function(server) {
+							tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
+								console.log("Current Server Updated");
+							})
+						});
+					});
+				} else {
 					getServerInfo_noAPI(function(server) {
 						tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
 							console.log("Current Server Updated");
 						})
 					});
-				});
-			} else {
-				getServerInfo_noAPI(function(server) {
-					tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
-						console.log("Current Server Updated");
-					})
-				});
-			}
-		});
-		$('.carousel').slick('unslick');
-		$('.carousel').remove();
-		$('#guiContainer').remove();
-		getServerUsers_noAPI();
-		getSites_noAPI();
+				}
+			});
+			$('.carousel').slick('unslick');
+			$('.carousel').remove();
+			$('#guiContainer').remove();
+			getServerUsers_noAPI();
+			getSites_noAPI();
+			i = i + 1;
+		}
 	});
 }
 
@@ -186,12 +235,12 @@ function getSites_noAPI(){
 }
 
 function switchSite() {
-	if (curCurrentSite < siteCount - 1 && curUserCount == -curCurrentSite && curGroupCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curPubDataCount == -curCurrentSite && curEmbedDataCount == -curCurrentSite && curProjectCount == -curCurrentSite && curTaskCount == -curCurrentSite && curSubscriptionCount == -curCurrentSite){
+	if (curCurrentSite < siteCount - 1){
 			curCurrentSite++;
 			$("#loadingMsg").html("Reading " + sitesList[curCurrentSite].name);
 			switchSiteLogin(sitesList[curCurrentSite].urlName);
-	} else if (curCurrentSite == siteCount - 1 && curUserCount == -curCurrentSite && curGroupCount == -curCurrentSite && curViewCount == -curCurrentSite && curWorkbookCount == -curCurrentSite && curPubDataCount == -curCurrentSite && curEmbedDataCount == -curCurrentSite && curProjectCount == -curCurrentSite && curTaskCount == -curCurrentSite && curSubscriptionCount == -curCurrentSite) {
-		//console.log("FINISHED LOADING!!");
+	} else if (curCurrentSite == siteCount - 1) {
+		getServerUsers_noAPI();
 		var tableArr = [
 			{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
 			{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'},
@@ -207,9 +256,6 @@ function switchSite() {
 		refreshCount(tableArr);
 		loadFinalGui();
 		$('.ajax-loading').hide();
-		/*document.getElementById("loadingMsg").hidden = true;
-		startWebServer();
-		startRESTAPI();*/
 	}
 }
 
@@ -223,15 +269,208 @@ function updateSiteInfo(site) {
 }
 
 function getServerElements_noAPI() {
-	getSiteUsers_noAPI();
-	getGroups_noAPI();
-	getViews_noAPI()
-	getWorkbooks_noAPI();
-	getPubDataSources_noAPI();
-	getEmbedDataSources_noAPI();
-	getProjects_noAPI();
-	getExtractTasks_noAPI();
-	getSubscriptions_noAPI();
+	var fs=require('fs');
+	var __dirname=fs.realpathSync('.');
+	var childProcess = require("child_process");
+	var retriever = childProcess.fork(__dirname + "/scripts/retriever.js");
+	var data = {
+		"serverURL":serverURL,
+		"workgroup": workgroup_session_id,
+		"token": xsrf_token,
+		"site": currentSiteId,
+		"siteName": currentSiteName,
+		"siteLuid": currentSiteLuid,
+		"siteUrl": sitesList[curCurrentSite].urlName
+	};
+	retriever.send(data);
+	retriever.on('message', function(msg){
+		console.log(msg);
+		var data = msg.data;
+    //console.log(msg);
+		switch (msg.type) {
+			case "site users":
+				if (data[0] != null) {
+					async.each(msg.data, function(user, callback) {
+						tableauDB.createSiteUser(currentSiteId, user, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Site Users');
+					});
+				} else {
+					$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Site Users');
+				}
+				break;
+			case "groups":
+				if (data[0] != null) {
+					async.each(msg.data, function(group, callback) {
+						tableauDB.createGroup(group, currentSiteId, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						refreshCount([{'name' : 'groups', 'div' : 'group', 'label' : 'groups'}]);
+						$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Groups');
+					});
+				} else {
+					refreshCount([{'name' : 'groups', 'div' : 'group', 'label' : 'groups'}]);
+					$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Groups');
+				}
+				break;
+			case "subscriptions":
+				if (data[0] != null) {
+					async.each(msg.data, function(subscription, callback) {
+						tableauDB.createSubscription(subscription, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						refreshCount([{'name' : 'subscriptions', 'div' : 'subscription', 'label' : 'subscriptions'}]);
+						$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Subscriptions');
+					});
+				} else {
+					refreshCount([{'name' : 'subscriptions', 'div' : 'subscription', 'label' : 'subscriptions'}]);
+					$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Subscriptions');
+				}
+				break;
+			case "subscription schedules":
+				if (data[0] != null) {
+					async.each(msg.data, function(schedule, callback) {
+						tableauDB.createSubscriptionSchedule(schedule, currentSiteId, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						//$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Subsciption Schedules');
+					});
+				}
+				break;
+			case "projects":
+				if (data[0] != null) {
+					async.each(msg.data, function(project, callback) {
+						tableauDB.createProject(project, currentSiteId, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						refreshCount([{'name' : 'projects', 'div' : 'project', 'label' : 'projects'}]);
+						$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Projects');
+					});
+				} else {
+					refreshCount([{'name' : 'projects', 'div' : 'project', 'label' : 'projects'}]);
+					$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Projects');
+				}
+				break;
+			case "embedded data sources":
+				if (data[0] != null) {
+					async.each(msg.data, function(ds, callback) {
+						tableauDB.createEmbedDataSource(ds, currentSiteId, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						refreshCount([{'name' : 'embeddatasources', 'div' : 'embeddatasource', 'label' : 'workbook data sources'}]);
+						$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Workbook Data Sources');
+					});
+				} else {
+					refreshCount([{'name' : 'embeddatasources', 'div' : 'embeddatasource', 'label' : 'workbook data sources'}]);
+					$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Workbook Data Sources');
+				}
+				break;
+			case "tasks":
+				if (data[0] != null) {
+					async.each(msg.data, function(task, callback) {
+						tableauDB.createTask(task, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						refreshCount([{'name' : 'tasks', 'div' : 'task', 'label' : 'tasks'}]);
+						$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Tasks');
+					});
+				} else {
+					refreshCount([{'name' : 'tasks', 'div' : 'task', 'label' : 'tasks'}]);
+					$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Tasks');
+				}
+				break;
+			case "task schedules":
+				if (data[0] != null) {
+					async.each(msg.data, function(schedule, callback) {
+						tableauDB.createTaskSchedule(schedule, currentSiteId, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						//$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Task Schedules');
+					});
+				}
+				break;
+			case "workbooks":
+				if (data[0] != null) {
+					async.each(msg.data, function(workbook, callback) {
+						tableauDB.createWorkbook(workbook, currentSiteId, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						refreshCount([{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'}]);
+						$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Workbooks');
+					});
+				} else {
+					refreshCount([{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'}]);
+					$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Workbooks');
+				}
+				break;
+			case "published data sources":
+				if (data[0] != null) {
+					async.each(msg.data, function(ds, callback) {
+						tableauDB.createPubDataSource(ds, currentSiteId, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						refreshCount([{'name' : 'pubdatasources', 'div' : 'pubdatasource', 'label' : 'published data sources'}]);
+						$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Published Data Sources');
+					});
+				} else {
+					refreshCount([{'name' : 'pubdatasources', 'div' : 'pubdatasource', 'label' : 'published data sources'}]);
+					$("#loadingMsg").append('<br/><i class="fa fa-check"></i> Published Data Sources');
+				}
+				break;
+			case "views":
+				if (data[0] != null) {
+					async.each(msg.data, function(view, callback) {
+						if (view.image) {
+							var v = view;
+							if (v.usageInfo) {
+								var viewUsage = v.usageInfo;
+							} else {
+								var viewUsage = {};
+							}
+							tableauDB.storeViewThumbnail(v.id, v.name, v.path, currentSiteUrl, viewUsage, v.image, function (viewImg) {
+								//console.log(viewImg);
+							});
+							view.image = true;
+						}
+						tableauDB.createView(view, currentSiteId, function() {
+							callback();
+						});
+					}, function(err) {
+						if (err) throw err;
+						refreshCount([{'name' : 'views', 'div' : 'view', 'label' : 'views'}]);
+					});
+				} else {
+					refreshCount([{'name' : 'views', 'div' : 'view', 'label' : 'views'}]);
+				}
+				break;
+		}
+		var status = msg.status;
+		if (status.siteUsers && status.groups && status.views && status.workbooks && status.publishedDataSources && status.embeddedDataSources && status.projects && status.tasks && status.taskSchedules && status.subscriptionSchedules && status.subscriptions) {
+			console.log("All site's data received");
+			switchSite();
+		}
+	});
 }
 
 function refreshCount(tableArr) {
@@ -246,553 +485,17 @@ function refreshCount(tableArr) {
 }
 
 function getServerUsers_noAPI() {
-	//console.log("Getting User List");
-
-	var settings = {
-	  "async": true,
-	  "crossDomain": true,
-	  "url": serverURL+"/vizportal/api/web/v1/getServerUsers",
-	  "method": "POST",
-		"headers" : {
-			"X-XSRF-TOKEN" : xsrf_token
-		},
-		"data": "{\"method\":\"getServerUsers\",\"params\":{\"order\":[{\"field\":\"displayName\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":99999999}}}"
-	}
-
-	$.ajax(settings).done(function (response) {
-		serverUsers = response.result.users;
-		curServerUserCount = serverUsers.length;
-		currentServerUser = 0;
-		for (var i = 0, user; user = serverUsers[i]; i++) {
-			tableauDB.createServerUser(user, function() {
-				currentServerUser++;
-				if (currentServerUser == curServerUserCount) {
-					//console.log("All users saved!");
-					refreshCount([{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'}]);
-				}
-			});
-		}
-	}).error(function(httpObj, textStatus) {
-      if(httpObj.status!=200) {
-				gui.Window.reload();
+	noAPI.getServerUsers(serverURL, workgroup_session_id, xsrf_token, [], 0, 100, function (serverUsers) {
+		async.each(serverUsers, function(user, callback) {
+			if(user) {
+				tableauDB.createServerUser(user, function() {
+					callback();
+				});
 			}
-	});
-}
-
-function getSiteUsers_noAPI() {
-	//console.log("Getting User List");
-
-	var settings = {
-	  "async": true,
-	  "crossDomain": true,
-	  "url": serverURL+"/vizportal/api/web/v1/getSiteUsers",
-	  "method": "POST",
-		"headers" : {
-			"X-XSRF-TOKEN" : xsrf_token
-		},
-		"data": "{\"method\":\"getSiteUsers\",\"params\":{\"order\":[{\"field\":\"displayName\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":99999999}}}"
-	}
-
-	$.ajax(settings).done(function (response) {
-		users = response.result.users;
-		curUserCount = users.length;
-		currentUser = 0;
-		for (var i = 0, user; user = users[i]; i++) {
-			user.siteId = currentSiteId;
-			tableauDB.createSiteUser(user, function() {
-				currentUser++;
-				if (currentUser == curUserCount) {
-					//console.log("All users saved!");
-					curUserCount = -curCurrentSite;
-					switchSite();
-				}
-			});
-		}
-	});
-}
-
-function getGroups_noAPI() {
-	//console.log("Getting groups");
-	var settings = {
-	  "async": true,
-	  "crossDomain": true,
-	  "url": serverURL+"/vizportal/api/web/v1/getGroups",
-	  "method": "POST",
-	  "headers": {
-	    "x-xsrf-token": xsrf_token
-	  },
-	  "data": "{\"method\":\"getGroups\",\"params\":{\"order\":[{\"field\":\"name\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":99999}}}"
-	}
-
-	$.ajax(settings).done(function (response) {
-		groups = response.result.groups;
-		curGroupCount = groups.length;
-		groupCount = groupCount + curGroupCount;
-		currentGroup = 0;
-		tableauDB.createSiteStat(currentSiteId, currentSiteName, "groups", curGroupCount, function(site){
-			//console.log("Group count for " + site.friendlyName + " saved");
+		}, function (err) {
+			if (err) throw err;
+			refreshCount([{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'}]);
 		});
-		if (curGroupCount == 0) {
-			curGroupCount = -curCurrentSite;
-			switchSite();
-		} else {
-			for (var i = 0, group; group = groups[i]; i++) {
-				tableauDB.createGroup(group, currentSiteId, function() {
-					//console.log("Group "+name+" saved!");
-					currentGroup++;
-					if (currentGroup == curGroupCount) {
-						//console.log("All groups saved!");
-						document.getElementById("item group").innerHTML = "<div class='countValue'><h2>"+groupCount+"</h2></div><div class='countTitle'>groups</div>";
-						curGroupCount = -curCurrentSite;
-						switchSite();
-					}
-				});
-			}
-		}
-	});
-}
-
-function base64Encode(str) {
-    var CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    var out = "", i = 0, len = str.length, c1, c2, c3;
-    while (i < len) {
-        c1 = str.charCodeAt(i++) & 0xff;
-        if (i == len) {
-            out += CHARS.charAt(c1 >> 2);
-            out += CHARS.charAt((c1 & 0x3) << 4);
-            out += "==";
-            break;
-        }
-        c2 = str.charCodeAt(i++);
-        if (i == len) {
-            out += CHARS.charAt(c1 >> 2);
-            out += CHARS.charAt(((c1 & 0x3)<< 4) | ((c2 & 0xF0) >> 4));
-            out += CHARS.charAt((c2 & 0xF) << 2);
-            out += "=";
-            break;
-        }
-        c3 = str.charCodeAt(i++);
-        out += CHARS.charAt(c1 >> 2);
-        out += CHARS.charAt(((c1 & 0x3) << 4) | ((c2 & 0xF0) >> 4));
-        out += CHARS.charAt(((c2 & 0xF) << 2) | ((c3 & 0xC0) >> 6));
-        out += CHARS.charAt(c3 & 0x3F);
-    }
-    return out;
-}
-
-function getImage(url, callback) {
-	var settings = {
-	  "async": false,
-	  "crossDomain": true,
-	  "url": url,
-	  "method": "GET",
-	  "headers": {
-	    "x-xsrf-token": xsrf_token
-	  },
-		"mimeType": "text/plain; charset=x-user-defined"
-	}
-	$.ajax(settings).done(function (response) {
-	  callback('data:image/png;base64,' + base64Encode(response));
-	});
-}
-
-function getViews_noAPI() {
-	//console.log("Getting Views");
-
-	var settings = {
-	  "async": false,
-	  "crossDomain": true,
-	  "url": serverURL + "/vizportal/api/web/v1/getViews",
-	  "method": "POST",
-	  "headers": {
-	    "x-xsrf-token": xsrf_token
-	  },
-		"data": "{\"method\":\"getViews\",\"params\":{\"order\":[{\"field\":\"name\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":999999},\"statFields\":[\"hitsTotal\",\"hitsLastOneMonthTotal\",\"hitsLastThreeMonthsTotal\",\"hitsLastTwelveMonthsTotal\",\"favoritesTotal\"]}}"
-}
-
-	$.ajax(settings).done(function (response) {
-		var views = response.result.views;
-		if (views) {
-			curViewCount = views.length;
-			viewCount = viewCount + curViewCount;
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "views", curViewCount, function(site){
-				//console.log("View count for " + site.friendlyName + " saved");
-			});
-			currentView = 0;
-			for (var i = 0; i < curViewCount; i++){
-				var view = views[i];
-
-				if (view.usageInfo) {
-					var viewUsage = view.usageInfo;
-				} else {
-					var viewUsage = {};
-				}
-
-				var settings = {
-				  "async": true,
-				  "crossDomain": true,
-				  "url": serverURL + "/vizportal/api/web/v1/getView",
-				  "method": "POST",
-				  "headers": {
-				    "x-xsrf-token": xsrf_token
-				  },
-				  "data": "{\"method\":\"getView\",\"params\":{\"id\":\""+view.id+"\"}}"
-				}
-
-				$.ajax(settings).done(function (response) {
-					var v  = response.result;
-					v.usageInfo = viewUsage;
-					v.siteName = currentSiteName;
-					v.siteLuid = currentSiteLuid;
-					v.siteUrl = sitesList[curCurrentSite].urlName;
-					if (viewUsage.hitsLastOneMonthTotal > 1 || v.favorite) {
-						var imgSrc = serverURL + "/" + v.thumbnailUrl;
-						getImage(imgSrc, function(image) {
-							tableauDB.storeViewThumbnail(v.id, v.name, v.path, currentSiteUrl, viewUsage, image, function (viewImg) {
-								//console.log(viewImg);
-							});
-						});
-					}
-					tableauDB.createView(v, currentSiteId, function() {
-						//console.log("View "+name+" saved!");
-						currentView++;
-						if (currentView == curViewCount) {
-							//console.log("All views saved!");
-							document.getElementById("item view").innerHTML = "<div class='countValue'><h2>"+viewCount+"</h2></div><div class='countTitle'>views</div>"
-							curViewCount = -curCurrentSite;
-							switchSite();
-						}
-					});
-				});
-			}
-		} else {
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "views", 0, function(site){
-				//console.log("View count for " + site.friendlyName + " saved");
-			});
-			curViewCount = -curCurrentSite;
-			switchSite();
-		}
-	});
-}
-
-function getWorkbooks_noAPI() {
-	//console.log("Getting Workbooks");
-
-	var settings = {
-	  "async": true,
-	  "crossDomain": true,
-	  "url": serverURL + "/vizportal/api/web/v1/getWorkbooks",
-	  "method": "POST",
-	  "headers": {
-	    "x-xsrf-token": xsrf_token
-	  },
-		"data": "{\"method\":\"getWorkbooks\",\"params\":{\"order\":[{\"field\":\"name\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":999999},\"statFields\":[\"hitsTotal\",\"hitsLastOneMonthTotal\",\"hitsLastThreeMonthsTotal\",\"hitsLastTwelveMonthsTotal\",\"favoritesTotal\"]}}"
-}
-
-	$.ajax(settings).done(function (response) {
-		var workbooks = response.result.workbooks;
-		if (workbooks) {
-			curWorkbookCount = workbooks.length;
-			workbookCount = workbookCount + curWorkbookCount;
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "workbooks", curWorkbookCount, function(site){
-				//console.log("Workbook count for " + site.friendlyName + " saved");
-			});
-			currentWorkbook = 0;
-			for (var i = 0; i < curWorkbookCount; i++){
-				var workbook = workbooks[i];
-
-				if (workbook.usageInfo) {
-					var workbookUsage = workbook.usageInfo;
-				} else {
-					var workbookUsage = {};
-				}
-				var w  = workbook;
-				tableauDB.createWorkbook(w, currentSiteId, function() {
-					//console.log("Workbook "+name+" saved!");
-					currentWorkbook++;
-					if (currentWorkbook == curWorkbookCount) {
-						//console.log("All workbookes saved!");
-						document.getElementById("item workbook").innerHTML = "<div class='countValue'><h2>"+workbookCount+"</h2></div><div class='countTitle'>workbooks</div>"
-						curWorkbookCount = -curCurrentSite;
-						switchSite();
-					}
-				});
-			}
-		} else {
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "workbooks", 0, function(site){
-				//console.log("Workbook count for " + site.friendlyName + " saved");
-			});
-			curWorkbookCount = -curCurrentSite;
-			switchSite();
-		}
-	});
-}
-
-
-function getPubDataSources_noAPI() {
-	//console.log("Getting Published Datasources");
-
-	var settings = {
-	  "async": false,
-	  "crossDomain": true,
-	  "url": serverURL + "/vizportal/api/web/v1/getDatasources",
-	  "method": "POST",
-	  "headers": {
-	    "x-xsrf-token": xsrf_token
-	  },
-		"data": "{\"method\":\"getDatasources\",\"params\":{\"filter\":{\"operator\":\"and\",\"clauses\":[{\"operator\":\"eq\",\"field\":\"isPublished\",\"value\":true}]},\"order\":[{\"field\":\"name\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":9999999}}}"
-}
-
-	$.ajax(settings).done(function (response) {
-		var datasources = response.result.datasources;
-		if (datasources) {
-			curPubDataCount = datasources.length;
-			dataPubCount = dataPubCount + curPubDataCount;
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "published datasources", curPubDataCount, function(site){
-				//console.log("Published Data Source count for " + currentSiteName + " saved");
-			});
-			currentPubDataSource = 0;
-			for (var i = 0; i < curPubDataCount; i++){
-				var datasource = datasources[i];
-
-				var settings = {
-				  "async": true,
-				  "crossDomain": true,
-				  "url": serverURL + "/vizportal/api/web/v1/getDatasource",
-				  "method": "POST",
-				  "headers": {
-				    "x-xsrf-token": xsrf_token
-				  },
-				  "data": "{\"method\":\"getDatasource\",\"params\":{\"id\":\""+datasource.id+"\"}}"
-				}
-
-				$.ajax(settings).done(function (response) {
-					var ds  = response.result;
-					tableauDB.createPubDataSource(ds, currentSiteId, function() {
-						//console.log("Published data source "+ds.name+" saved!");
-						currentPubDataSource++;
-						if (currentPubDataSource == curPubDataCount) {
-							//console.log("All published data sources saved!");
-							document.getElementById("item pubdatasource").innerHTML = "<div class='countValue'><h2>"+dataPubCount+"</h2></div><div class='countTitle'>published data sources</div>"
-							curPubDataCount = -curCurrentSite;
-							switchSite();
-						}
-					});
-				});
-			}
-		} else {
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "published datasources", 0, function(site){
-				//console.log("Data source count for " + currentSiteName + " saved");
-			});
-			curPubDataCount = -curCurrentSite;
-			switchSite();
-		}
-	});
-}
-
-function getEmbedDataSources_noAPI() {
-	//console.log("Getting Embedded Datasources");
-
-	var settings = {
-	  "async": false,
-	  "crossDomain": true,
-	  "url": serverURL + "/vizportal/api/web/v1/getDatasources",
-	  "method": "POST",
-	  "headers": {
-	    "x-xsrf-token": xsrf_token
-	  },
-		"data": "{\"method\":\"getDatasources\",\"params\":{\"filter\":{\"operator\":\"and\",\"clauses\":[{\"operator\":\"eq\",\"field\":\"isPublished\",\"value\":false}]},\"order\":[{\"field\":\"name\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":9999999}}}"
-}
-
-	$.ajax(settings).done(function (response) {
-		var embeddatasources = response.result.datasources;
-		if (embeddatasources) {
-			curEmbedDataCount = embeddatasources.length;
-			dataEmbedCount = dataEmbedCount + curEmbedDataCount;
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "embedded datasources", curEmbedDataCount, function(site){
-				//console.log("Embedded data source count for " + currentSiteName + " saved");
-			});
-			currentEmbedDataSource = 0;
-			for (var i = 0; i < curEmbedDataCount; i++){
-				var ds = embeddatasources[i];
-				tableauDB.createEmbedDataSource(ds, currentSiteId, function() {
-					//console.log("Embedded data source "+ds.name+" saved!");
-					currentEmbedDataSource++;
-					if (currentEmbedDataSource == curEmbedDataCount) {
-						//console.log("All embedded data sources saved!");
-						document.getElementById("item embeddatasource").innerHTML = "<div class='countValue'><h2>"+dataEmbedCount+"</h2></div><div class='countTitle'>embedded data sources</div>"
-						curEmbedDataCount = -curCurrentSite;
-						switchSite();
-					}
-				});
-			}
-		} else {
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "embedded datasources", 0, function(site){
-				//console.log("Embedded data source count for " + currentSiteName + " saved");
-			});
-			curEmbedDataCount = -curCurrentSite;
-			switchSite();
-		}
-	});
-}
-
-function getProjects_noAPI() {
-	//console.log("Getting Projects");
-
-	var settings = {
-	  "async": true,
-	  "crossDomain": true,
-	  "url": serverURL+"/vizportal/api/web/v1/getProjects",
-	  "method": "POST",
-	  "headers": {
-	    "x-xsrf-token": xsrf_token
-	  },
-	  "data": "{\"method\":\"getProjects\",\"params\":{\"order\":[{\"field\":\"name\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":999999}}}"
-	}
-
-	$.ajax(settings).done(function (response) {
-		var projects = response.result.projects;
-		if (projects) {
-			curProjectCount = projects.length;
-			projectCount = projectCount + curProjectCount;
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "projects", curProjectCount, function(site){
-				//console.log("Project count for " + currentSiteName + " saved");
-			});
-			currentProject = 0;
-			for (var i = 0; i < curProjectCount; i++){
-				var prj = projects[i];
-				tableauDB.createProject(prj, currentSiteId, function() {
-					//console.log("Project "+prj.name+" saved!");
-					currentProject++;
-					if (currentProject == curProjectCount) {
-						//console.log("All projects saved!");
-						document.getElementById("item project").innerHTML = "<div class='countValue'><h2>"+projectCount+"</h2></div><div class='countTitle'>projects</div>"
-						curProjectCount = -curCurrentSite;
-						switchSite();
-					}
-				});
-			}
-		} else {
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "projects", 0, function(site){
-				//console.log("Project count for " + currentSiteName + " saved");
-			});
-			curProjectCount = -curCurrentSite;
-			switchSite();
-		}
-	});
-}
-
-function getExtractTasks_noAPI() {
-	//console.log("Getting Extract Refreshes");
-	var settings = {
-  "async": false,
-  "crossDomain": true,
-  "url": serverURL + "/vizportal/api/web/v1/getExtractTasks",
-  "method": "POST",
-  "headers": {
-		"accept": "application/json, text/plain, */*",
-    //"origin": serverURL,
-    "x-xsrf-token": xsrf_token,
-    //"user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36",
-    "content-type": "application/json;charset=UTF-8",
-    //"referer": serverURL + "/",
-    //"accept-encoding": "gzip, deflate",
-    "accept-language": "en-US,en;q=0.8"
-  },
-  "data": "{\"method\":\"getExtractTasks\",\"params\":{\"filter\":{\"operator\":\"and\",\"clauses\":[{\"operator\":\"eq\",\"field\":\"siteId\",\"value\":\""+currentSiteId+"\"}]},\"order\":[{\"field\":\"targetName\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":46}}}"
-}
-$.ajax(settings).done(function (response) {
-		var tasks = response.result.tasks;
-		var schedules = response.result.schedules;
-		if (response.result.totalCount > 0) {
-			curTaskCount = tasks.length;
-			taskCount = taskCount + curTaskCount;
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "tasks", curTaskCount, function(site){
-				//console.log("Task count for " + currentSiteName + " saved");
-			});
-			currentTask = 0;
-
-			for (var j = 0; j < schedules.length; j++) {
-				tableauDB.createTaskSchedule(schedules[j], currentSiteId, function() {
-					//console.log("Scheudle logged");
-				})
-			}
-			for (var i = 0; i < curTaskCount; i++){
-				var tsk = tasks[i];
-				tableauDB.createTask(tsk, function() {
-					//console.log("Task "+tsk.name+" saved!");
-					currentTask++;
-					if (currentTask == curTaskCount) {
-						//console.log("All tasks saved!");
-						document.getElementById("item task").innerHTML = "<div class='countValue'><h2>"+taskCount+"</h2></div><div class='countTitle'>tasks</div>"
-						curTaskCount = -curCurrentSite;
-						switchSite();
-					}
-				});
-			}
-		} else {
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "tasks", 0, function(site){
-				//console.log("Task count for " + currentSiteName + " saved");
-			});
-			curTaskCount = -curCurrentSite;
-			switchSite();
-		}
-	});
-}
-
-
-function getSubscriptions_noAPI() {
-	//console.log("Getting Subscriptions");
-	var settings = {
-	  "async": false,
-	  "crossDomain": true,
-	  "url": serverURL + "/vizportal/api/web/v1/getSubscriptions",
-	  "method": "POST",
-	  "headers": {
-	    "accept": "application/json, text/plain, */*",
-	    "x-xsrf-token": xsrf_token,
-	    "content-type": "application/json;charset=UTF-8",
-	    "accept-language": "en-US,en;q=0.8"
-	  },
-	  "data": "{\"method\":\"getSubscriptions\",\"params\":{\"filter\":{\"operator\":\"and\",\"clauses\":[{\"operator\":\"eq\",\"field\":\"siteId\",\"value\":\""+currentSiteId+"\"}]},\"order\":[{\"field\":\"subject\",\"ascending\":true}],\"page\":{\"startIndex\":0,\"maxItems\":46}}}"
-	}
-
-	$.ajax(settings).done(function (response) {
-		var subscriptions = response.result.subscriptions;
-		var schedules = response.result.schedules;
-		if (response.result.totalCount > 0) {
-			curSubscriptionCount = subscriptions.length;
-			subscriptionCount = subscriptionCount + curSubscriptionCount;
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "subscriptions", curSubscriptionCount, function(site){
-				//console.log("Subscription count for " + currentSiteName + " saved");
-			});
-			currentSubscription = 0;
-
-			for (var j = 0; j < schedules.length; j++) {
-				tableauDB.createSubscriptionSchedule(schedules[j], currentSiteId, function() {
-					//console.log("Scheudle logged");
-				})
-			}
-			for (var i = 0; i < curSubscriptionCount; i++){
-				var sub = subscriptions[i];
-				tableauDB.createSubscription(sub, function() {
-					//console.log("Subscription "+sub.name+" saved!");
-					currentSubscription++;
-					if (currentSubscription == curSubscriptionCount) {
-						//console.log("All subscriptions saved!");
-						document.getElementById("item subscription").innerHTML = "<div class='countValue'><h2>"+subscriptionCount+"</h2></div><div class='countTitle'>subscriptions</div>"
-						curSubscriptionCount = -curCurrentSite;
-						switchSite();
-					}
-				});
-			}
-		} else {
-			tableauDB.createSiteStat(currentSiteId, currentSiteName, "subscriptions", 0, function(site){
-				//console.log("Subscription count for " + currentSiteName + " saved");
-			});
-			curSubscriptionCount = -curCurrentSite;
-			switchSite();
-		}
 	});
 }
 
@@ -1013,7 +716,7 @@ function loadFinalGui () {
 	var left = $('<i id="trendLeft" class="fa fa-arrow-circle-left"></i>').appendTo(trendingDiv),
     right = $('<i id="trendRight" class="fa fa-arrow-circle-right"></i>').appendTo(trendingDiv);
 	$('.content-wrap').append(guiContainer);
-	tableauDB.fetchIndexRange([2], [999999999999], "views", "trending", function(views) {
+	tableauDB.fetchIndexRange([11], [999999999999], "views", "trending", function(views) {
 		if (views.length > 0) {
 			var orderViews = views.reverse();
 			var viewLength = orderViews.length;
@@ -1184,7 +887,7 @@ function baseMenuBar() {
 		iso.layout();
 	});
 }
-
+/*
 function sendData() {
 	var fs = require('fs');
 	var name = document.querySelector('#nameInput').value;
@@ -1225,7 +928,7 @@ function buildData(stats, callback) {
 	}
 	callback(datatoSend);
 }
-
+*/
 function loadNavBar () {
 	var navbar = document.createElement("nav");
 	navbar.setAttribute('class','navbar navbar-default navbar-fixed-top');
@@ -1399,7 +1102,7 @@ function loadEmailModal() {
 	var dataSubmit = document.createElement("button");
 	dataSubmit.setAttribute('id','dataSubmit');
 	dataSubmit.innerHTML = "Submit";
-	dataSubmit.addEventListener('click', sendData);
+	//dataSubmit.addEventListener('click', sendData);
 	formDiv.appendChild(dataSubmit);
 	modalBody.appendChild(formDiv);
 	modalContent.appendChild(modalBody);
