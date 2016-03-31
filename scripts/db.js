@@ -1,15 +1,17 @@
 var tableauDB = (function () {
+	var dbLogger = winston.loggers.get('db');
 	var tDB = {};
-	var dat1astore = null;
+	var datastore = null;
 
 	tDB.open = function (callback) {
+		dbLogger.verbose('open',{'state':'Starting open database'});
 
 		// Open a connection to the datastore.
-		var request = indexedDB.open('tableau', 2);
+		var request = indexedDB.open('tableau', 3);
 
 		// Handle datastore upgrades.
 		request.onupgradeneeded = function (e) {
-			console.log("Upgrading Database")
+			dbLogger.verbose('open',{'state':'Upgrading database'});
 			var db = e.target.result;
 
 			e.target.transaction.onerror = tDB.onerror;
@@ -54,6 +56,9 @@ var tableauDB = (function () {
 			if (db.objectStoreNames.contains('subscriptionSchedules')) {
 				db.deleteObjectStore('subscriptionSchedules');
 			}
+			if (db.objectStoreNames.contains('taskSchedules')) {
+				db.deleteObjectStore('taskSchedules');
+			}
 			if (db.objectStoreNames.contains('sitestats')) {
 				db.deleteObjectStore('sitestats');
 			}
@@ -90,7 +95,7 @@ var tableauDB = (function () {
 					keyPath : 'id'
 				});
 			store.createIndex("siteID","siteID",{unique:false});
-			store.createIndex("trending",["usageInfo.hitsLastOneMonthTotal","siteUrl"],{unique:false});
+			store.createIndex("trending",["thisWeekHits","siteUrl"],{unique:false});
 			store.createIndex("favorite",["isFavorite","siteUrl"],{unique:false});
 			//store.createIndex("workbook_url","workbook-url",{unique:false});
 			var store = db.createObjectStore('groups', {
@@ -391,29 +396,15 @@ var tableauDB = (function () {
 	/**
 	 * Create a new site user
 	*/
-	tDB.createSiteUser = function (user, callback) {
-		// Get a reference to the db.
+	tDB.createSiteUser = function (site, user, callback) {
 		var db = datastore;
-
-		// Initiate a new transaction.
 		var transaction = db.transaction(['siteUsers'], 'readwrite');
-
-		// Get the datastore.
 		var objStore = transaction.objectStore('siteUsers');
-
-		// Create an object for the todo item.
-		var user = user;
-
-		// Create the datastore request.
+		user.siteID = site;
 		var request = objStore.put(user);
-
-		// Handle a successful datastore put.
 		request.onsuccess = function (e) {
-			// Execute the callback function.
 			callback(user);
 		};
-
-		// Handle errors.
 		request.onerror = tDB.onerror;
 	};
 	/**
@@ -496,7 +487,11 @@ var tableauDB = (function () {
 		} else {
 			view.isFavorite = 0;
 		}
-
+		if(view.hitsTimeSeries) {
+			view.thisWeekHits = view.hitsTimeSeries[11];
+		} else {
+			view.thisWeekHits = 0;
+		}
 		// Create the datastore request.
 		var request = objStore.put(view);
 
@@ -870,7 +865,7 @@ var tableauDB = (function () {
 	return tDB;
 }());
 
-function deleteDB(indexedDBName) {
+deleteDB = function (indexedDBName) {
 	try {
 		var dbreq = window.indexedDB.deleteDatabase(indexedDBName);
 		dbreq.onsuccess = function (event) {

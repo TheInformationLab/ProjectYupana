@@ -1,7 +1,7 @@
 {
   "name": "Yupana",
   "description": "Project Yupana by The Information Lab. Author Craig Bloodworth. License GPL3",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "main": "app.html",
   "window": {
     "title": "Project Yupana - The Information Lab",
@@ -13,26 +13,34 @@
     "icon": "images/icon.png"
   },
   "licenses": [
-   {
-       "type": "GPLv3",
-       "url": "https://en.wikipedia.org/wiki/GNU_General_Public_License"
-   }
+    {
+      "type": "GPLv3",
+      "url": "https://en.wikipedia.org/wiki/GNU_General_Public_License"
+    }
   ],
-  "maintainers":[ {
-   "name": "Craig Bloodworth",
-   "email": "craig.bloodworth@theinformationlab.co.uk",
-   "web": "http://www.theinformationlab.co.uk"
-   }],
-   "contributors":[ {
-    "name": "Craig Bloodworth",
-    "email": "craig.bloodworth@theinformationlab.co.uk",
-    "web": "http://www.theinformationlab.co.uk"
-    }],
+  "maintainers": [
+    {
+      "name": "Craig Bloodworth",
+      "email": "craig.bloodworth@theinformationlab.co.uk",
+      "web": "http://www.theinformationlab.co.uk"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Craig Bloodworth",
+      "email": "craig.bloodworth@theinformationlab.co.uk",
+      "web": "http://www.theinformationlab.co.uk"
+    }
+  ],
   "dependencies": {
+    "async": "^2.0.0-rc.1",
     "body-parser": "^1.15.0",
+    "bufferlist": "^0.1.0",
     "express": "3.x",
+    "jquery": "^2.2.2",
     "portfinder": "^1.0.2",
-    "unirest": "^0.4.2"
+    "request": "^2.69.0",
+    "winston": "^2.2.0"
   },
   "permissions": [
     "cookies",

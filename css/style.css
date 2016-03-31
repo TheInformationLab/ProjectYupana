@@ -131,7 +131,6 @@ div.ajax-loading {
  }
 
 .item:hover{
-  cursor: pointer;
   border-bottom: 3px solid #0194FE;
 }
 
