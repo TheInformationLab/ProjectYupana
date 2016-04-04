@@ -63,9 +63,8 @@ if (switches.length > 0) {
   }
 }
 
-function initialiseYupana(server) {
+function initialiseYupana() {
 	checkAPIAccess();
-
 	document.body.className = "yay-hide";
 	loadNavBar();
 	initiliseStatsTiles();
@@ -196,7 +195,9 @@ function getServerInfo_noAPI(callback){
 		"url": serverURL+"/vizportal/api/web/v1/getSessionInfo",
 		"method": "POST",
 		"headers": {
-			"x-xsrf-token": xsrf_token
+			"x-xsrf-token": xsrf_token,
+			"accept": "application/json, text/plain, */*",
+			"content-type": "application/json;charset=UTF-8"
 		},
 		"data": "{\"method\":\"getSessionInfo\",\"params\":{}}"
 	}
@@ -217,7 +218,9 @@ function getSites_noAPI(){
 	  "url": serverURL+"/vizportal/api/web/v1/getSiteNamesAcrossAllPods",
 	  "method": "POST",
 		"headers" : {
-			"X-XSRF-TOKEN" : xsrf_token
+			"X-XSRF-TOKEN" : xsrf_token,
+			"accept": "application/json, text/plain, */*",
+			"content-type": "application/json;charset=UTF-8"
 		},
 	  "data": "{\"method\":\"getSiteNamesAcrossAllPods\",\"params\":{\"page\":{\"startIndex\":0,\"maxItems\":99999}}}"
 	}
@@ -225,20 +228,24 @@ function getSites_noAPI(){
 	$.ajax(settings).done(function (response) {
 		var sites = response.result.siteNames;
 		//console.log(sites);
-		for (var i = 0; i < sites.length; i++){
-			siteCount = sites.length;
-			currentSite = 0;
-			tableauDB.createSite(i, sites[i].name, sites[i].urlName, function() {
-				currentSite++;
-				if (currentSite == siteCount) {
-					tableauDB.fetchRecords(0,"sites", function(sites) {
-						sitesList = sites;
-						document.getElementById("item site").innerHTML = "<div class='countValue'><h2>"+siteCount+"</h2></div><div class='countTitle'>sites</div>";
-						$("#loadingMsg").html("Reading " + sitesList[0].name);
-						switchSiteLogin(sitesList[0].urlName);
-					});
-				}
-			});
+		if (sites) {
+			for (var i = 0; i < sites.length; i++){
+				siteCount = sites.length;
+				currentSite = 0;
+				tableauDB.createSite(i, sites[i].name, sites[i].urlName, function() {
+					currentSite++;
+					if (currentSite == siteCount) {
+						tableauDB.fetchRecords(0,"sites", function(sites) {
+							sitesList = sites;
+							document.getElementById("item site").innerHTML = "<div class='countValue'><h2>"+siteCount+"</h2></div><div class='countTitle'>sites</div>";
+							$("#loadingMsg").html("Reading " + sitesList[0].name);
+							switchSiteLogin(sitesList[0].urlName);
+						});
+					}
+				});
+			}
+		} else {
+			getServerElements_noAPI();
 		}
 	});
 }
@@ -248,7 +255,7 @@ function switchSite() {
 			curCurrentSite++;
 			$("#loadingMsg").html("Reading " + sitesList[curCurrentSite].name);
 			switchSiteLogin(sitesList[curCurrentSite].urlName);
-	} else if (curCurrentSite == siteCount - 1) {
+	} else {
 		getServerUsers_noAPI();
 		var tableArr = [
 			{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
@@ -289,7 +296,7 @@ function getServerElements_noAPI() {
 		"site": currentSiteId,
 		"siteName": currentSiteName,
 		"siteLuid": currentSiteLuid,
-		"siteUrl": sitesList[curCurrentSite].urlName
+		"siteUrl": currentSiteUrl
 	};
 	retriever.send(data);
 	retriever.on('message', function(msg){

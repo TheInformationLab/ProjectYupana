@@ -94,14 +94,14 @@ process.on('message',function(msg){
                     v.siteName = msg.siteName;
                     v.siteLuid = msg.siteLuid;
                     v.siteUrl = msg.siteUrl;
-                    if (v.hitsTimeSeries[11] > 10 || v.favorite) {
+                    if (v.favorite || (v.hitsTimeSeries && v.hitsTimeSeries[11] > 10)) {
         							var imgSrc = msg.serverURL + "/" + v.thumbnailUrl;
         							noAPI.getImage(imgSrc, msg.workgroup, msg.token, function(image) {
         								v.image = image;
                         dataset.push(v);
                         callback();
         							});
-        						} else {
+                    } else {
                       dataset.push(v);
                       callback();
                     }

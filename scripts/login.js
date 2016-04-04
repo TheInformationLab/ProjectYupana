@@ -140,11 +140,15 @@ function getUrlVars(url) {
 function serURLSubmit(){
 	loginLogger.verbose('serURLSubmit',{'state':'Getting Server Info','serverURL':serverURL});
 	var settings = {
-  "async": true,
-  "crossDomain": true,
-  "url": serverURL+"/vizportal/api/web/v1/getServerSettingsUnauthenticated",
-  "method": "POST",
-	  "data": "{\"method\":\"getServerSettingsUnauthenticated\",\"params\":{}}"
+	  "async": true,
+	  "crossDomain": true,
+	  "url": serverURL+"/vizportal/api/web/v1/getServerSettingsUnauthenticated",
+	  "method": "POST",
+		"headers": {
+	    "accept": "application/json, text/plain, */*",
+			"content-type": "application/json;charset=UTF-8"
+		},
+		"data": "{\"method\":\"getServerSettingsUnauthenticated\",\"params\":{}}"
 	}
 
 	$.ajax(settings).done(function (response) {
@@ -265,6 +269,10 @@ function loginUser(){
 	  "crossDomain": true,
 	  "url": serverURL + "/vizportal/api/web/v1/generatePublicKey",
 	  "method": "POST",
+		"headers": {
+	    "accept": "application/json, text/plain, */*",
+			"content-type": "application/json;charset=UTF-8"
+		},
 	  "data": "{\"method\":\"generatePublicKey\",\"params\":{}}"
 	}
 	$.ajax(settings).done(function (response) {
@@ -277,20 +285,24 @@ function loginUser(){
 		  "crossDomain": true,
 		  "url": serverURL+"/vizportal/api/web/v1/login",
 		  "method": "POST",
+			"headers": {
+		    "accept": "application/json, text/plain, */*",
+				"content-type": "application/json;charset=UTF-8"
+			},
 		  "data": "{\"method\":\"login\",\"params\":{\"username\":\""+username+"\",\"encryptedPassword\":\""+res+"\",\"keyId\":\""+keyID+"\"}}"
 		}
 		$.ajax(settings).done(function (response, textStatus, jqXHR) {
 			getSessionCookies(function(workgroup_session, xsrf) {
 				workgroup_session_id = workgroup_session;
 				xsrf_token = xsrf;
+				loginLogger.verbose('loginUser',{'state':'Valid user credentials','serverURL':serverURL,'xsrf':xsrf_token,'workgroup':workgroup_session_id});
+				$('#serverLogin').hide();
+				currentSiteLuid = response.result.site.luid;
+				currentSiteName = response.result.site.name;
+				currentSiteId = response.result.site.name;
+				currentSiteUrl = response.result.site.urlName;
+				initialiseYupana();
 			});
-			loginLogger.verbose('loginUser',{'state':'Valid user credentials','serverURL':serverURL,'xsrf':xsrf_token,'workgroup':workgroup_session_id});
-			$('#serverLogin').hide();
-			currentSiteLuid = response.result.site.luid;
-			currentSiteName = response.result.site.name;
-			currentSiteId = response.result.site.name;
-			currentSiteUrl = response.result.site.urlName;
-			initialiseYupana();
 		}).fail(function(err) {
 			loginLogger.error('loginUser',err);
 		}).always(function(response){
@@ -310,7 +322,9 @@ var getServerSettingsUnauthenticated = function (callback) {
 	  "url": serverURL+"/vizportal/api/web/v1/getServerSettingsUnauthenticated",
 	  "method": "POST",
 	  "headers": {
-	    "X-XSRF-TOKEN": xsrf_token
+	    "X-XSRF-TOKEN": xsrf_token,
+		  "accept": "application/json, text/plain, */*",
+			"content-type": "application/json;charset=UTF-8"
 	  },
 	  "data": "{\"method\":\"getServerSettingsUnauthenticated\",\"params\":{}}"
 	}
@@ -330,7 +344,9 @@ var letsSwitchSite = function (site, callback) {
 	  "url": serverURL+"/vizportal/api/web/v1/switchSite",
 	  "method": "POST",
 	  "headers": {
-	    "X-XSRF-TOKEN": xsrf_token
+	    "X-XSRF-TOKEN": xsrf_token,
+			"accept": "application/json, text/plain, */*",
+			"content-type": "application/json;charset=UTF-8"
 	  },
 	  "data": "{\"method\":\"switchSite\",\"params\":{\"urlName\":\""+site+"\"}}"
 	}
