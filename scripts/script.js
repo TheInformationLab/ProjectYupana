@@ -1,4 +1,14 @@
+var osenv = require('osenv');
+var home = osenv.home();
+
 var winston = require('winston');
+
+var mkdirp = require('mkdirp');
+
+mkdirp(home + '/Yupana/logs', function (err) {
+    if (err) console.error(err);
+});
+
 winston.loggers.add('login', {
 	console: {
 		level: 'error',
@@ -7,8 +17,10 @@ winston.loggers.add('login', {
 	},
 	file: {
 		level: 'debug',
-		filename: 'logs/yupana.log',
-		label: 'login.js'
+		filename: home + '/Yupana/logs/yupana.log',
+		label: 'login.js',
+		handleExceptions: true,
+    humanReadableUnhandledException: true
 	}
 });
 winston.loggers.add('db', {
@@ -19,18 +31,15 @@ winston.loggers.add('db', {
 	},
 	file: {
 		level: 'debug',
-		filename: 'logs/yupana.log',
-		label: 'db.js'
+		filename: home + '/Yupana/logs/yupana.log',
+		label: 'db.js',
+		handleExceptions: true,
+    humanReadableUnhandledException: true
 	}
 });
 
-winston.add(winston.transports.File, {
-    filename: 'logs/yupana-exceptions.log',
-    handleExceptions: true,
-    humanReadableUnhandledException: true
-});
-
-var noAPI = require('./scripts/noAPIFunctions.js');
+var appRoot = require('app-root-path');
+var noAPI = require(appRoot + '/scripts/noAPIFunctions.js');
 var async = require('async');
 
 var workgroup_session_id = "", xsrf_token = "", currentSiteLuid = "", apiLevel = 0, siteCount = 0, userCount = 0, groupCount = 0, viewCount = 0, workbookCount = 0, projectCount = 0, dataPubCount = 0, dataEmbedCount = 0, taskCount = 0, subscriptionCount = 0, sitesList = [], currentSiteId = "", currentSiteName = "", currentSiteUrl = "";

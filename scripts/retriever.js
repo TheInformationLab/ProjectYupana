@@ -1,12 +1,22 @@
+var appRoot = require('app-root-path');
+var osenv = require('osenv');
+var home = osenv.home();
+var winston = require('winston');
 
-var fs=require('fs');
-var __dirname=fs.realpathSync('.');
-var noAPI = require(__dirname + "/scripts/noAPIFunctions.js");
+var retLogger = new (winston.Logger)({
+    exitOnError: false, //don't crash on exception
+    transports: [
+        new (winston.transports.Console)({level: 'error',colorize: true, label: 'retriever.js'}),
+        new (winston.transports.File)({ level: 'verbose', filename: home + '/Yupana/logs/yupana.log', label: 'retriever.js' })
+    ]
+});
+
+var noAPI = require(appRoot + "/scripts/noAPIFunctions.js");
 var url = require('url');
 var async = require('async');
 
 process.on('message',function(msg){
-  console.log(msg);
+  retLogger.info("onMessage", {'state':'Valid message received', msg});
   var status = {};
   status.siteUsers = false;
   status.groups = false;
@@ -26,6 +36,7 @@ process.on('message',function(msg){
     async.parallel(
       [
         function getSiteUsers(callback) {
+          retLogger.verbose('getSiteUsers',{'state':'Starting getSiteUsers','status':status});
           noAPI.getSiteUsers(msg.serverURL, msg.workgroup, msg.token, [], 0, 1000, function (siteUsers) {
             if (siteUsers[0] != null) {
               status.siteUsers = true;
@@ -46,6 +57,7 @@ process.on('message',function(msg){
           });
         },
         function getGroups(callback) {
+          retLogger.verbose('getGroups',{'state':'Starting getGroups','status':status});
           noAPI.getGroups(msg.serverURL, msg.workgroup, msg.token, [], 0, 1000, function (groups) {
             if (groups[0] != null) {
               status.groups = true;
@@ -66,6 +78,7 @@ process.on('message',function(msg){
           });
         },
         function getViews(callback) {
+          retLogger.verbose('getViews',{'state':'Starting getViews','status':status});
           noAPI.getViews(msg.serverURL, msg.workgroup, msg.token, [], 0, 1000, function (views) {
             if (views[0] != null) {
               var dataset = [];
@@ -116,6 +129,7 @@ process.on('message',function(msg){
           });
         },
         function getWorkbooks(callback) {
+          retLogger.verbose('getWorkbooks',{'state':'Starting getWorkbooks','status':status});
           noAPI.getWorkbooks(msg.serverURL, msg.workgroup, msg.token, [], 0, 1000, function (workbooks) {
             if (workbooks[0] != null) {
               status.workbooks = true;
@@ -136,6 +150,7 @@ process.on('message',function(msg){
           });
         },
         function getPublishedDataSources(callback) {
+          retLogger.verbose('getPublishedDataSources',{'state':'Starting getPublishedDataSources','status':status});
           noAPI.getPublishedDataSources(msg.serverURL, msg.workgroup, msg.token, [], 0, 1000, function (datasources) {
             if (datasources[0] != null) {
               var dataset = [];
@@ -168,6 +183,7 @@ process.on('message',function(msg){
           });
         },
         function getEmbeddedDataSources(callback) {
+          retLogger.verbose('getEmbeddedDataSources',{'state':'Starting getEmbeddedDataSources','status':status});
           noAPI.getEmbeddedDataSources(msg.serverURL, msg.workgroup, msg.token, [], 0, 1000, function (datasources) {
             if (datasources[0] != null) {
               status.embeddedDataSources = true;
@@ -188,6 +204,7 @@ process.on('message',function(msg){
           });
         },
         function getProjects(callback) {
+          retLogger.verbose('getProjects',{'state':'Starting getProjects','status':status});
           noAPI.getProjects(msg.serverURL, msg.workgroup, msg.token, [], 0, 1000, function (projects) {
             if (projects[0] != null) {
               status.projects = true;
@@ -208,6 +225,7 @@ process.on('message',function(msg){
           });
         },
         function getExtractTasks(callback) {
+          retLogger.verbose('getExtractTasks',{'state':'Starting getExtractTasks','status':status});
           noAPI.getExtractTasks(msg.serverURL, msg.workgroup, msg.token, msg.site, [],[], 0, 1000, function (tasks,schedules) {
             if (tasks[0] != null) {
               status.tasks = true;
@@ -243,6 +261,7 @@ process.on('message',function(msg){
           });
         },
         function getSubscriptions(callback) {
+          retLogger.verbose('getSubscriptions',{'state':'Starting getSubscriptions','status':status});
           noAPI.getSubscriptions(msg.serverURL, msg.workgroup, msg.token, msg.site, [],[], 0, 1000, function (subscriptions, schedules) {
             if (subscriptions[0] != null) {
               status.subscriptions = true;
@@ -279,15 +298,16 @@ process.on('message',function(msg){
         }
       ],
       function(err, results) {
-        if (err) throw err;
+        if (err) throw retLogger.error('asyncParallel',err);
       });
     //getExtractTasks_noAPI();
     //getSubscriptions_noAPI();
   } else {
-    console.log("retriever.js: Request should contain server URL, workgroup session ID, xsrf authention token and site ID");
+    retLogger.error("onMessage", {'state':'Invalid message', msg});
   }
 })
 
 process.on('uncaughtException',function(err){
-    console.log("retriever.js: " + err.message + "\n" + err.stack + "\n Stopping data collection");
+  retLogger.error('uncaughtException',err);
+  console.log("retriever.js: " + err.message + "\n" + err.stack + "\n Stopping data collection");
 })

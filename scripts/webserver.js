@@ -1,9 +1,8 @@
 function startWebServer(port) {
-  fs=require('fs');
+  var appRoot = require('app-root-path');
 
   var express = require('express');
   var app = express();
-  var __dirname=fs.realpathSync('.');
 
   app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -11,7 +10,7 @@ function startWebServer(port) {
     next();
   });
 
-  app.use(express.static(__dirname + '/wdc'));
+  app.use(express.static(appRoot + '/wdc'));
 
   app.get('/views', function (req, res, next) {
     console.log("Views Requested");
