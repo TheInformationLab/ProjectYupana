@@ -46,6 +46,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getServerUsers',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -76,6 +77,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getSiteUsers',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -106,6 +108,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getGroups',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -136,6 +139,7 @@ module.exports = {
     var options = {
       method: 'GET',
       url: imageURL,
+      strictSSL: false,
       headers:
        {
           'Cookie' : 'workgroup_session_id='+workgroup+'; XSRF-TOKEN='+xsrf_token,
@@ -163,6 +167,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getViews',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -193,6 +198,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getView',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -202,10 +208,14 @@ module.exports = {
       body: '{"method":"getView","params":{"id":"'+viewID+'"}}'
     };
     request(options, function (error, response, body) {
-      if (error) apiLogger.error('getView', error);
-      var results = JSON.parse(body);
-      apiLogger.verbose('getView',{'state':'Request complete','serverURL':serverURL,'workgroup':workgroup,'xsrf_token':xsrf_token,'viewID':viewID});
-      callback(results.result);
+      if (error) {
+        apiLogger.error('getView', error);
+        callback("Error");
+      } else {
+        var results = JSON.parse(body);
+        apiLogger.verbose('getView',{'state':'Request complete','serverURL':serverURL,'workgroup':workgroup,'xsrf_token':xsrf_token,'viewID':viewID});
+        callback(results.result);
+      }
     });
   },
 
@@ -215,6 +225,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getWorkbooks',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -245,6 +256,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getDatasources',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -276,6 +288,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getDatasources',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -306,6 +319,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getDatasource',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -328,6 +342,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getProjects',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -358,6 +373,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getExtractTasks',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',
@@ -390,6 +406,7 @@ module.exports = {
     var options = { method: 'POST',
       url: serverURL + '/vizportal/api/web/v1/getExtractTasks',
       gzip: true,
+      strictSSL: false,
       headers:
        {
           'Accept-Encoding' : 'gzip, deflate',

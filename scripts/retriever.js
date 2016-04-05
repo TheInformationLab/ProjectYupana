@@ -90,20 +90,26 @@ process.on('message',function(msg){
                     var viewUsage = {};
                   }
                   noAPI.getView(msg.serverURL, msg.workgroup, msg.token, view.id, function(v) {
-                    v.usageInfo = viewUsage;
-                    v.siteName = msg.siteName;
-                    v.siteLuid = msg.siteLuid;
-                    v.siteUrl = msg.siteUrl;
-                    if (v.favorite || (v.hitsTimeSeries && v.hitsTimeSeries[11] > 10)) {
-        							var imgSrc = msg.serverURL + "/" + v.thumbnailUrl;
-        							noAPI.getImage(imgSrc, msg.workgroup, msg.token, function(image) {
-        								v.image = image;
+                    if (v == "Error") {
+                      retLogger.error('getView',{'state':'Error retrieving view','view':view});
+                      dataset.push(view);
+                      callback();
+                    } else {
+                      v.usageInfo = viewUsage;
+                      v.siteName = msg.siteName;
+                      v.siteLuid = msg.siteLuid;
+                      v.siteUrl = msg.siteUrl;
+                      if (v.favorite || (v.hitsTimeSeries && v.hitsTimeSeries[11] > 10)) {
+          							var imgSrc = msg.serverURL + "/" + v.thumbnailUrl;
+          							noAPI.getImage(imgSrc, msg.workgroup, msg.token, function(image) {
+          								v.image = image;
+                          dataset.push(v);
+                          callback();
+          							});
+                      } else {
                         dataset.push(v);
                         callback();
-        							});
-                    } else {
-                      dataset.push(v);
-                      callback();
+                      }
                     }
                   });
                 }

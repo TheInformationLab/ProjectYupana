@@ -305,6 +305,10 @@ function loginUser(){
 			});
 		}).fail(function(err) {
 			loginLogger.error('loginUser',err);
+			if(err.status==401) {
+				$('#login').show();
+				$('#password').css("border-color","red");
+			}
 		}).always(function(response){
 			loginLogger.debug('loginUser',response);
 		});
