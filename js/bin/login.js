@@ -40,6 +40,42 @@ var getSessionInfo = function(callback) {
 	});
 }
 
+function S4() {
+    return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+}
+
+var registerDevice = function (xsrf, wrkgrp, callback) {
+	loginLogger.info('registerDevice',{'state':'Calling oauth API','serverURL':serverURL});
+	var settings = {
+	  "async": true,
+	  "crossDomain": true,
+	  "url": serverURL+"/oauth2/v1/token",
+	  "method": "POST",
+	  "headers": {
+	    "accept": "*/*",
+	    "accept-encoding": "gzip, deflate",
+	    "cookie": "XSRF-TOKEN="+xsrf_token+"; workgroup_session_id="+workgroup_session_id,
+	    "content-type": "application/x-www-form-urlencoded",
+			"x-xsrf-token": xsrf_token
+	  },
+	  "data": {
+	    "client_id": "{"+(S4() + S4() + "-" + S4() + "-4" + S4().substr(0,3) + "-" + S4() + "-" + S4() + S4() + S4()).toUpperCase()+"}",
+	    "device_id": "{"+(S4() + S4() + "-" + S4() + "-4" + S4().substr(0,3) + "-" + S4() + "-" + S4() + S4() + S4()).toUpperCase()+"}",
+	    "device_name": "yupana",
+	    "grant_type": "session",
+	    "session_id": workgroup_session_id
+	  }
+	}
+	$.ajax(settings).done(function (response) {
+		callback(response);
+	}).fail(function (err) {
+		loginLogger.error('registerDevice',err);
+		callback(err);
+	}).always(function (response) {
+		loginLogger.debug('registerDevice',response);
+	});
+}
+
 function showLogin() {
 	loginLogger.verbose('showLogin',{'state':'Showing server URL input','serverURL':serverURL});
 	var div_serverLogin = document.createElement("div");
@@ -389,6 +425,10 @@ function switchSiteLogin(site){
 				loginLogger.verbose('switchSiteLogin',{'state':'Valid user credentials','serverURL':serverURL,'xsrf':xsrf_token,'workgroup':workgroup_session_id});
 				getSessionInfo(function(response) {
 					loginLogger.verbose('switchSiteLogin',{'state':'Switched site','serverURL':serverURL,'site':response.result.site,'xsrf':xsrf_token,'workgroup':workgroup_session_id});
+					currentSiteLuid = response.result.site.luid;
+					currentSiteName = response.result.site.name;
+					currentSiteId = response.result.site.name;
+					currentSiteUrl = response.result.site.urlName;
 					updateSiteInfo(response.result.site);
 				});
 			});

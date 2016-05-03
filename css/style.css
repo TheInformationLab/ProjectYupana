@@ -18,7 +18,7 @@ div.ajax-loading{
 	left: 0;
 	height:100%;
 	width:100%;
-	z-index: 9999999;
+	z-index: 9;
 	/*background-image: url('../../images/loading-bgr.gif');*/
 	background-color: #e7e7e7;
 	opacity: 0.5;
@@ -62,6 +62,33 @@ div.ajax-loading {
 	border: 1px solid #BDBDBD;
 }
 
+#selectSites{
+	width: 510px;
+  text-align: center;
+  position: absolute;
+  left: 50%;
+  margin-left: -225px;
+  top: 200px;
+  background-color: #fff;
+  z-index: 10;
+  padding: 30px;
+  border-radius: 10px;
+}
+
+#selectSites h3 {
+	padding-bottom: 0px;
+	margin-top: 0px;
+}
+
+#selectedSites{
+	width: 450px;
+	font-family: 'Droid Sans', sans-serif;
+	margin-bottom: 5px;
+	padding-top:10px;
+	border: 1px solid #BDBDBD;
+	margin-top: 45px;
+}
+
 #urlSubmit {
 	padding: 10px;
 	margin-top: 5px;
@@ -91,7 +118,7 @@ div.ajax-loading {
 	border: 1px solid #000;
 }
 
-#login {
+#login,#submit {
 	padding: 10px;
 	margin-top: 5px;
 	width: 450px;
@@ -100,6 +127,19 @@ div.ajax-loading {
 	color: white;
 	border: 1px solid transparent;
 	border-radius: 4px;
+}
+
+.siteBtn {
+	padding: 5px;
+	margin-bottom: 5px;
+	width: 50px;
+	color: #E97D32;
+	background-color: #FFF;
+	font-size: 12px;
+	border: 1px solid #E97D32;
+	border-radius: 2px;
+	position: absolute;
+	left: 30px;
 }
 
 #serverLogo{

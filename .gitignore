@@ -18,7 +18,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # Local Build Directories
-build/
+build/Yupana/
 images/
 logs/
 

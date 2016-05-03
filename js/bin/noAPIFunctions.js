@@ -329,10 +329,14 @@ module.exports = {
       body: '{"method":"getDatasource","params":{"id":"'+dsID+'"}}'
     };
     request(options, function (error, response, body) {
-      if (error) apiLogger.error('getDataSource', error);
-      var results = JSON.parse(body);
-      apiLogger.verbose('getDataSource',{'state':'Request complete','serverURL':serverURL,'workgroup':workgroup,'xsrf_token':xsrf_token,'dsID':dsID,'dataset size':dataset.length});
-      callback(results.result, dataset);
+      if (error) {
+        apiLogger.error('getDataSource', error);
+        callback("Error");
+      } else {
+        var results = JSON.parse(body);
+        apiLogger.verbose('getDataSource',{'state':'Request complete','serverURL':serverURL,'workgroup':workgroup,'xsrf_token':xsrf_token,'dsID':dsID,'dataset size':dataset.length});
+        callback(results.result, dataset);
+      }
     });
   },
 

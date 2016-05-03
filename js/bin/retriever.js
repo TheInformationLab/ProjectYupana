@@ -11,7 +11,7 @@ var retLogger = new (winston.Logger)({
     ]
 });
 
-var noAPI = require(appRoot + "/scripts/noAPIFunctions.js");
+var noAPI = require(appRoot + "/js/bin/noAPIFunctions.js");
 var url = require('url');
 var async = require('async');
 
@@ -163,8 +163,13 @@ process.on('message',function(msg){
               async.eachLimit(datasources, 5, function(datasource, callback) {
                 if (datasource) {
                   noAPI.getDataSource(msg.serverURL, msg.workgroup, msg.token, datasource.id, dataset, function(ds, data) {
-                    dataset.push(ds);
-                    callback();
+                    if (ds == "Error") {
+                      dataset.push(datasource);
+                      callback();
+                    } else {
+                      dataset.push(ds);
+                      callback();
+                    }
                   });
                 }
               }, function (err) {
@@ -306,8 +311,6 @@ process.on('message',function(msg){
       function(err, results) {
         if (err) throw retLogger.error('asyncParallel',err);
       });
-    //getExtractTasks_noAPI();
-    //getSubscriptions_noAPI();
   } else {
     retLogger.error("onMessage", {'state':'Invalid message', msg});
   }

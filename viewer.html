@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Tableau Viewer</title>
+    <link href="css/fontawesome/font-awesome.min.css" rel="stylesheet">
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet">
+    <link href="css/viewer.css" rel="stylesheet">
+    <link href='http://fonts.googleapis.com/css?family=Droid+Sans:400,700' rel='stylesheet' type='text/css'>
+</head>
+
+<body>
+    <div id="vizContainer" style="width:100%; height:100%;"></div>
+    <div id="vizContainer2" style="width:0px; height:0px;visibility: hidden;"></div>
+    <div id="menu"><i class="fa fa-bars menuBtn" aria-hidden="true"></i>
+      <div id="menuContents">
+        <div class="panel-group" id="accordion">
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#functions" class="link">
+                <i class="fa fa-caret-down" aria-hidden="true"></i>Functions</a>
+              </h4>
+            </div>
+            <div id="functions" class="panel-collapse collapse in">
+              <div class="panel-body" id="functions">
+                <div class="checkbox">
+                  <label><input id="autoRefresh" type="checkbox" value="">Auto refresh viz</label>
+                </div>
+                <div class="checkbox">
+                  <label><input id="snapshot" type="checkbox" value="">Local snapshot</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#view" class="link">
+                <i class="fa fa-caret-right" aria-hidden="true"></i>View</a>
+              </h4>
+            </div>
+            <div id="view" class="panel-collapse collapse">
+              <div class="panel-body" id="viewInfo"></div>
+            </div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#workbook" class="link">
+                <i class="fa fa-caret-right" aria-hidden="true"></i>Workbook</a>
+              </h4>
+            </div>
+            <div id="workbook" class="panel-collapse collapse">
+              <div class="panel-body" id="workbookInfo"></div>
+            </div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#data" class="link">
+                <i class="fa fa-caret-right" aria-hidden="true"></i>Data Source</a>
+              </h4>
+            </div>
+            <div id="data" class="panel-collapse collapse">
+              <div class="panel-body" id="dataInfo"></div>
+            </div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h4 class="panel-title">
+                <a data-toggle="collapse" data-parent="#accordion" href="#author" class="link">
+                <i class="fa fa-caret-right" aria-hidden="true"></i>Author</a>
+              </h4>
+            </div>
+            <div id="author" class="panel-collapse collapse">
+              <div class="panel-body" id="authorInfo"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</body>
+<script type="text/javascript" src="js/lib/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="js/lib/bootstrap/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/lib/tableau/js-api.js"></script>
+<script type="text/javascript" src="js/bin/viewer.js"></script>
+</html>

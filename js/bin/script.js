@@ -39,7 +39,7 @@ winston.loggers.add('db', {
 });
 
 var appRoot = require('app-root-path');
-var noAPI = require(appRoot + '/scripts/noAPIFunctions.js');
+var noAPI = require(appRoot + '/js/bin/noAPIFunctions.js');
 var async = require('async');
 
 var workgroup_session_id = "", xsrf_token = "", currentSiteLuid = "", apiLevel = 0, siteCount = 0, userCount = 0, groupCount = 0, viewCount = 0, workbookCount = 0, projectCount = 0, dataPubCount = 0, dataEmbedCount = 0, taskCount = 0, subscriptionCount = 0, sitesList = [], currentSiteId = "", currentSiteName = "", currentSiteUrl = "";
@@ -86,6 +86,9 @@ function initialiseYupana() {
 			if (serverURL == cs.serverUrl) {
 				getServerInfo_noAPI(function(server) {
 					if (server.user.id == cs.user.id) {
+							tableauDB.updateCurrentServer(serverURL, server, 1, function(newServer) {
+								console.log("Current Server Updated");
+							});
 						tableauDB.fetchRecords(0,"projects", function(projects) {
 							if(projects.length == 0) {
 								console.log("No projects found. ReIndex");
@@ -93,7 +96,7 @@ function initialiseYupana() {
 							} else {
 								var tableArr = [
 									{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
-									{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'},
+									{'name' : 'serverUsers', 'div' : 'user', 'label' : 'server users'},
 									{'name' : 'groups', 'div' : 'group', 'label' : 'groups'},
 									{'name' : 'projects', 'div' : 'project', 'label' : 'projects'},
 									{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'},
@@ -208,6 +211,24 @@ function getServerInfo_noAPI(callback){
 	});
 }
 
+function submitSites(sites) {
+  for (var i = 0; i < sites.length; i++){
+    siteCount = sites.length;
+    currentSite = 0;
+    tableauDB.createSite(i, sites[i].name, sites[i].urlName, function() {
+      currentSite++;
+      if (currentSite == siteCount) {
+        tableauDB.fetchRecords(0,"sites", function(sites) {
+          sitesList = sites;
+          document.getElementById("item site").innerHTML = "<div class='countValue'><h2>"+siteCount+"</h2></div><div class='countTitle'>sites</div>";
+          $("#loadingMsg").html("Reading " + sitesList[0].name);
+          switchSiteLogin(sitesList[0].urlName);
+        });
+      }
+    });
+  }
+}
+
 function getSites_noAPI(){
 	//console.log("Getting Site List");
 	document.getElementById("loadingMsg").innerHTML = "Getting List of Sites";
@@ -227,23 +248,68 @@ function getSites_noAPI(){
 
 	$.ajax(settings).done(function (response) {
 		var sites = response.result.siteNames;
-		//console.log(sites);
 		if (sites) {
-			for (var i = 0; i < sites.length; i++){
-				siteCount = sites.length;
-				currentSite = 0;
-				tableauDB.createSite(i, sites[i].name, sites[i].urlName, function() {
-					currentSite++;
-					if (currentSite == siteCount) {
-						tableauDB.fetchRecords(0,"sites", function(sites) {
-							sitesList = sites;
-							document.getElementById("item site").innerHTML = "<div class='countValue'><h2>"+siteCount+"</h2></div><div class='countTitle'>sites</div>";
-							$("#loadingMsg").html("Reading " + sitesList[0].name);
-							switchSiteLogin(sitesList[0].urlName);
-						});
-					}
-				});
-			}
+      if (sites.length == 1) {
+        submitSites(sites);
+      } else {
+        $('.ajax-loading').css('background-image','url("")');
+        $('#loadingMsg').html('');
+        var allSites = [];
+        var newSiteList = [];
+        for (var i=0; i < sites.length; i++) {
+          var site = {};
+          site.name = sites[i].name;
+          site.id = i;
+          newSiteList.push(site);
+          allSites.push(i);
+        }
+        var div_selectSites = document.createElement("div");
+      	div_selectSites.setAttribute('id','selectSites');
+        document.body.appendChild(div_selectSites);
+        $('#selectSites').html('<h3>Index all sites?</h3>');
+        var allBtn = document.createElement("button");
+  			allBtn.setAttribute('class','siteBtn');
+  			allBtn.innerHTML = "All";
+        div_selectSites.appendChild(allBtn);
+        var noneBtn = document.createElement("button");
+  			noneBtn.setAttribute('class','siteBtn');
+        noneBtn.setAttribute('style','left:90px');
+  			noneBtn.innerHTML = "None";
+        div_selectSites.appendChild(noneBtn);
+      	var selectedSites = document.createElement("div");
+      	selectedSites.setAttribute('id','selectedSites');
+      	div_selectSites.appendChild(selectedSites);
+        var ms = $('#selectedSites').magicSuggest({
+    			allowFreeEntries : false,
+          hideTrigger: true,
+    			value: allSites,
+    			data: newSiteList,
+          displayField: 'name',
+          valueField: 'id',
+    			toggleOnClick: true
+    		});
+        allBtn.addEventListener('click', function() {
+          ms.setValue(allSites);
+        });
+        noneBtn.addEventListener('click', function() {
+          ms.clear()
+        });
+        var submitBtn = document.createElement("button");
+  			submitBtn.setAttribute('id','submit');
+  			submitBtn.innerHTML = "Submit";
+        div_selectSites.appendChild(submitBtn);
+  			submitBtn.addEventListener('click', function(){
+          var idList = ms.getValue();
+          var submitedSites = [];
+          for (var i = 0; i < idList.length; i++) {
+            submitedSites.push(sites[idList[i]]);
+          }
+          $('.ajax-loading').css('background-image','');
+          $('#selectSites').remove();
+  				submitSites(submitedSites);
+  			}, false);
+        $('.ajax-loading').css('background-image','');
+      }
 		} else {
 			getServerElements_noAPI();
 		}
@@ -259,7 +325,7 @@ function switchSite() {
 		getServerUsers_noAPI();
 		var tableArr = [
 			{'name' : 'sites', 'div' : 'site', 'label' : 'sites'},
-			{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'},
+			{'name' : 'serverUsers', 'div' : 'user', 'label' : 'server users'},
 			{'name' : 'groups', 'div' : 'group', 'label' : 'groups'},
 			{'name' : 'projects', 'div' : 'project', 'label' : 'projects'},
 			{'name' : 'workbooks', 'div' : 'workbook', 'label' : 'workbooks'},
@@ -288,7 +354,7 @@ function getServerElements_noAPI() {
 	var fs=require('fs');
 	var __dirname=fs.realpathSync('.');
 	var childProcess = require("child_process");
-	var retriever = childProcess.fork(__dirname + "/scripts/retriever.js");
+	var retriever = childProcess.fork(__dirname + "/js/bin/retriever.js");
 	var data = {
 		"serverURL":serverURL,
 		"workgroup": workgroup_session_id,
@@ -459,12 +525,9 @@ function getServerElements_noAPI() {
 					async.each(msg.data, function(view, callback) {
 						if (view.image) {
 							var v = view;
-							if (v.usageInfo) {
-								var viewUsage = v.usageInfo;
-							} else {
-								var viewUsage = {};
-							}
-							tableauDB.storeViewThumbnail(v.id, v.name, v.path, currentSiteUrl, viewUsage, v.image, function (viewImg) {
+              v.siteUrl = currentSiteUrl;
+              v.id = parseInt(v.id);
+							tableauDB.storeViewThumbnail(v, function (viewImg) {
 								//console.log(viewImg);
 							});
 							view.image = true;
@@ -510,9 +573,35 @@ function getServerUsers_noAPI() {
 			}
 		}, function (err) {
 			if (err) throw err;
-			refreshCount([{'name' : 'serverUsers', 'div' : 'user', 'label' : 'users'}]);
+			refreshCount([{'name' : 'serverUsers', 'div' : 'user', 'label' : 'server users'}]);
 		});
 	});
+}
+
+function createSnapshot (viewId, filePath) {
+  var iso = new Isotope( document.getElementById('guiContainer' ) );
+  iso.destroy();
+  $('#snapshots').remove();
+  $('#favorites').remove();
+  $('#trending').remove();
+  $('#guiContainer').remove();
+  tableauDB.fetchRecords(viewId,"views", function(view) {
+    tableauDB.saveSnapshot(view[0], filePath, function () {
+      loadFinalGui();
+    });
+  });
+}
+
+function removeSnapshot (viewId, callback) {
+  var iso = new Isotope( document.getElementById('guiContainer' ) );
+  iso.destroy();
+  $('#snapshots').remove();
+  $('#favorites').remove();
+  $('#trending').remove();
+  $('#guiContainer').remove();
+  tableauDB.deleteSnapshot(viewId, function() {
+    loadFinalGui();
+  });
 }
 
 function initiliseStatsTiles() {
@@ -529,7 +618,7 @@ function initiliseStatsTiles() {
 		var userCountDiv = document.createElement("div");
 		userCountDiv.setAttribute('class','item');
 		userCountDiv.setAttribute('id','item user');
-		userCountDiv.innerHTML = "<div class='countValue'><h2>"+userCount+"</h2></div><div class='countTitle'>users</div>";
+		userCountDiv.innerHTML = "<div class='countValue'><h2>"+userCount+"</h2></div><div class='countTitle'>server users</div>";
 		statsContainer.appendChild(userCountDiv);
 		var groupCountDiv = document.createElement("div");
 		groupCountDiv.setAttribute('class','item');
@@ -633,6 +722,118 @@ function initiliseStatsTiles() {
 function loadFinalGui () {
 	var guiContainer = document.createElement("div");
 	guiContainer.setAttribute('id','guiContainer');
+  var snapDiv = document.createElement("div");
+  snapDiv.setAttribute('class','slider');
+  snapDiv.setAttribute('id','snapshots');
+  //trendingDiv.innerHTML = "<div class='slider'><div class='countTitle'>trending</div>";
+  var snapCarouselDiv = document.createElement("div");
+  snapCarouselDiv.setAttribute('class','snapshotCarousel');
+  snapDiv.appendChild(snapCarouselDiv);
+  guiContainer.appendChild(snapDiv);
+  var snapleft = $('<i id="snapLeft" class="fa fa-arrow-circle-left"></i>').appendTo(snapDiv),
+    snapright = $('<i id="snapRight" class="fa fa-arrow-circle-right"></i>').appendTo(snapDiv);
+	tableauDB.fetchRecords(0, "snapshots", function(snapshots) {
+    if (snapshots.length > 0) {
+      var snapshotTotal = snapshots.length;
+			var snapshotCount = 0;
+			for (var i = 0; i < snapshotTotal; i++) {
+				var currentSnapshot = snapshots[i];
+				tableauDB.fetchRecords(currentSnapshot.id, "viewThumbnails", function (snapshotImage) {
+          var url = require('url');
+          var urlParse = url.parse(serverURL);
+          hostname = urlParse.hostname;
+          var dir = osenv.home()+'/Yupana/snapshots/'+hostname+'/';
+          snapshotImage[0].filePath = dir+snapshotImage[0].id+'.png';
+					var thumbnailSpan = document.createElement("span");
+					var thumbnailDiv = document.createElement("div");
+					var thumbnailLink = document.createElement("a");
+					var titleDiv = document.createElement("div");
+					var snapshotImg = document.createElement("img");
+					if (snapshotImage[0]) {
+						snapshotImg.setAttribute("src", snapshotImage[0].image);
+					}
+					thumbnailSpan.setAttribute("class", "viewThumbnailSpan");
+					thumbnailDiv.setAttribute("class", "viewThumbnailDiv");
+					thumbnailDiv.appendChild(snapshotImg);
+					if (snapshotImage[0]) {
+						titleDiv.innerHTML = snapshotImage[0].name;
+					}
+					thumbnailSpan.appendChild(thumbnailDiv);
+					thumbnailSpan.appendChild(titleDiv);
+
+					thumbnailSpan.addEventListener('click', function() {
+						if (currentSiteUrl!= "") {
+							var link = serverURL + "/#/site/" + snapshotImage[0].siteUrl + "/views/" +snapshotImage[0].path;
+						} else {
+							var link = serverURL + "/" + snapshotImage[0].siteUrl + "/views/" +snapshotImage[0].path;
+						}
+            var mainwin = nw.Window.get();
+            snapshotImage[0].link = link;
+						if (currentSiteUrl != snapshotImage[0].siteUrl) {
+							switchSiteResource(snapshotImage[0].siteUrl, function(response) {
+                var j = 0;
+                nw.Window.open ("viewer.html", {
+  								position: 'center',
+  								width: nw.Window.get().width,
+  								height: nw.Window.get().height,
+  								title: "Project Yupana - The Information Lab"
+  							}, function(win) {
+  								win.on ('loaded', function(){
+                    win.window.haveParent(mainwin);
+  									if(j==0) {
+  										console.log("Openening Viz " + link);
+  										win.window.loadViz(snapshotImage[0]);
+  										++j;
+  									}
+  								});
+  							});
+							});
+						} else {
+							var j = 0;
+							nw.Window.open ("viewer.html", {
+								position: 'center',
+								width: nw.Window.get().width,
+								height: nw.Window.get().height,
+								title: "Project Yupana - The Information Lab"
+							}, function(win) {
+								win.on ('loaded', function(){
+                  win.window.haveParent(mainwin);
+									if(j==0) {
+										console.log("Openening Viz " + link);
+										win.window.loadViz(snapshotImage[0]);
+										++j;
+									}
+								});
+							});
+						}
+
+					});
+
+					$('.snapshotCarousel').append(thumbnailSpan);
+					snapshotCount++;
+					if(snapshotCount == snapshotTotal) {
+						$('.snapshotCarousel').slick({
+							slidesToShow: 4,
+						  slidesToScroll: 3,
+							adaptiveHeight: true,
+							variableWidth: true,
+							draggable: true,
+							arrows: true,
+							prevArrow: $('#snapLeft'),
+							nextArrow: $('#snapRight')
+						});
+						$('#snapshots').append("<div class='countTitle'>your snapshots</div>");
+            var iso = new Isotope( document.getElementById('guiContainer' ) );
+					}
+		      //URL.revokeObjectURL(imgURL);
+				});
+				//carouselDiv.appendChild(thumbnailDiv);
+			}
+    } else {
+      $('#snapshots').remove();
+      var iso = new Isotope( document.getElementById('guiContainer' ) );
+    }
+  });
 
 	var favDiv = document.createElement("div");
 	favDiv.setAttribute('class','slider');
@@ -669,30 +870,50 @@ function loadFinalGui () {
 					thumbnailSpan.appendChild(titleDiv);
 
 					thumbnailSpan.addEventListener('click', function() {
-						var link = serverURL + "/#/site/" + favImage[0].siteUrl + "/views/" +favImage[0].path+"?:embed=y";
+						if (currentSiteUrl!= "") {
+							var link = serverURL + "/#/site/" + favImage[0].siteUrl + "/views/" +favImage[0].path;
+						} else {
+							var link = serverURL + "/" + favImage[0].siteUrl + "/views/" +favImage[0].path;
+						}
+            var mainwin = nw.Window.get();
+            favImage[0].link = link;
+            console.log(currentSiteUrl);
+            console.log(favImage[0].siteUrl);
 						if (currentSiteUrl != favImage[0].siteUrl) {
 							switchSiteResource(favImage[0].siteUrl, function(response) {
-								var win = gui.Window.open (link, {
-					  			position: 'center',
-					  			width: 901,
-					  			height: 600,
-									toolbar: false,
-									title: "Project Yupana, Redirecting - The Information Lab"
-								});
-								win.on ('loaded', function(){
-
-								});
+                var j = 0;
+                nw.Window.open ("viewer.html", {
+  								position: 'center',
+  								width: nw.Window.get().width,
+  								height: nw.Window.get().height,
+  								title: "Project Yupana - The Information Lab"
+  							}, function(win) {
+  								win.on ('loaded', function(){
+                    win.window.haveParent(mainwin);
+  									if(j==0) {
+  										console.log("Openening Viz " + link);
+  										win.window.loadViz(favImage[0]);
+  										++j;
+  									}
+  								});
+  							});
 							});
 						} else {
-							var win = gui.Window.open (link, {
+							var j = 0;
+							nw.Window.open ("viewer.html", {
 								position: 'center',
-								width: 901,
-								height: 600,
-								toolbar: false,
-								title: "Project Yupana, Redirecting - The Information Lab"
-							});
-							win.on ('loaded', function(){
-
+								width: nw.Window.get().width,
+								height: nw.Window.get().height,
+								title: "Project Yupana - The Information Lab"
+							}, function(win) {
+								win.on ('loaded', function(){
+                  win.window.haveParent(mainwin);
+									if(j==0) {
+										console.log("Openening Viz " + link);
+										win.window.loadViz(favImage[0]);
+										++j;
+									}
+								});
 							});
 						}
 
@@ -712,6 +933,7 @@ function loadFinalGui () {
 							nextArrow: $('#favRight')
 						});
 						$('#favorites').append("<div class='countTitle'>your favorites</div>");
+            var iso = new Isotope( document.getElementById('guiContainer' ) );
 					}
 		      //URL.revokeObjectURL(imgURL);
 				});
@@ -719,6 +941,7 @@ function loadFinalGui () {
 			}
 		} else {
 			$('#favorites').remove();
+      var iso = new Isotope( document.getElementById('guiContainer' ) );
 		}
 	});
 
@@ -755,36 +978,55 @@ function loadFinalGui () {
 					thumbnailDiv.setAttribute("class", "viewThumbnailDiv");
 					thumbnailDiv.appendChild(thumbnailImg);
 					if (image[0]) {
-						titleDiv.innerHTML = image[0].name + "<br/><i>" + image[0].viewUsage.hitsLastOneMonthTotal + " views</i>";
+						titleDiv.innerHTML = image[0].name + "<br/><i>" + image[0].usageInfo.hitsLastOneMonthTotal + " views</i>";
 					}
 					thumbnailSpan.appendChild(thumbnailDiv);
 					thumbnailSpan.appendChild(titleDiv);
 
 					thumbnailSpan.addEventListener('click', function() {
-						var link = serverURL + "/#/site/" + image[0].siteUrl + "/views/" +image[0].path+"?:embed=y";
+						var link = serverURL + "/#/site/" + image[0].siteUrl + "/views/" +image[0].path;
+            image[0].link = link;
+            var mainwin = nw.Window.get();
+            console.log(currentSiteUrl);
+            console.log(image[0].siteUrl);
+
 						if (currentSiteUrl != image[0].siteUrl) {
 							switchSiteResource(image[0].siteUrl, function(response) {
-								var win = gui.Window.open (link, {
-					  			position: 'center',
-					  			width: 901,
-					  			height: 600,
-									toolbar: false,
-									title: "Project Yupana, SAML Login - The Information Lab"
-								});
-								win.on ('loaded', function(){
-
-								});
+                var j = 0;
+                nw.Window.open ("viewer.html", {
+  								position: 'center',
+  								width: nw.Window.get().width,
+  								height: nw.Window.get().height,
+  								title: "Project Yupana - The Information Lab"
+  							}, function(win) {
+                  console.log("Window launched");
+  								win.on('loaded', function(){
+                    win.window.haveParent(mainwin);
+  									if(j==0) {
+  										console.log("Openening Viz " + link);
+  										win.window.loadViz(image[0]);
+  										++j;
+  									}
+  								});
+  							});
 							});
 						} else {
-							var win = gui.Window.open (link, {
+              var j = 0;
+              nw.Window.open ("viewer.html", {
 								position: 'center',
-								width: 901,
-								height: 600,
-								toolbar: false,
-								title: "Project Yupana, SAML Login - The Information Lab"
-							});
-							win.on ('loaded', function(){
-
+								width: nw.Window.get().width,
+								height: nw.Window.get().height,
+								title: "Project Yupana - The Information Lab"
+							}, function(win) {
+                console.log("Window launched");
+								win.on('loaded', function(){
+                  win.window.haveParent(mainwin);
+									if(j==0) {
+										console.log("Openening Viz " + link);
+										win.window.loadViz(image[0]);
+										++j;
+									}
+								});
 							});
 						}
 
@@ -804,6 +1046,7 @@ function loadFinalGui () {
 							nextArrow: $('#trendRight')
 						});
 						$('#trending').append("<div class='countTitle'>what's trending</div>");
+            var iso = new Isotope( document.getElementById('guiContainer' ) );
 					}
 		      //URL.revokeObjectURL(imgURL);
 				});
@@ -811,6 +1054,7 @@ function loadFinalGui () {
 			}
 		} else {
 			$('#trending').remove();
+      var iso = new Isotope( document.getElementById('guiContainer' ) );
 		}
 	});
 
@@ -825,126 +1069,6 @@ function loadFinalGui () {
 	});
 }
 
-/*function drawChart(stats) {
-	var ndx = crossfilter(stats);
-	var siteDim = ndx.dimension(function(d) {return d.friendlyName});
-	var countMeasure = siteDim.group().reduceSum(function(d) {return d.count});
-	var statsbarchart = dc.rowChart(".chart");
-	var width = document.getElementById('workbookChart').offsetWidth;
-	statsbarchart
-		.width(width).height(400)
-		.margins({top: 0, left: 10, right: 10, bottom: 20})
-		.dimension(siteDim)
-		.group(countMeasure)
-		.label(function (d) {
-			return d.key;
-		})
-		.title(function (d) {
-			return d.value;
-		})
-		.elasticX(true)
-		.xAxis().ticks(8)
-	statsbarchart.xAxis().tickFormat(d3.format("d"));
-	statsbarchart.labelOffsetY(18);
-	statsbarchart.ordering(function(d){return -d.value});
-	dc.renderAll();
-	var container = document.querySelector('#statsContainer');
-	var iso = new Isotope( container );
-	iso.arrange({
-		// options
-		itemSelector: '.item',
-		layoutMode: 'masonry',
-			masonry: {
-				columnWidth: 210,
-				gutter: 10,
-				isFitWidth: true
-			}
-	});
-	iso.on('layoutComplete', function(){
-		document.querySelector('#statsContainer').style = 'static';
-		//console.log("Stats Tile Layout Done!");
-	});
-}*/
-
-function baseMenuBar() {
-	var emailContainer = document.createElement("div");
-	emailContainer.setAttribute('id','emailContainer');
-	emailContainer.setAttribute('class','email');
-	var exportImage = document.createElement("img");
-	exportImage.setAttribute('id','exportImage');
-	exportImage.setAttribute('class','exportImage');
-	exportImage.setAttribute('src','export.png');
-	var closeImage = document.createElement("img");
-	closeImage.setAttribute('id','closeImage');
-	closeImage.setAttribute('class','closeImage');
-	closeImage.setAttribute('src','close.png');
-	closeImage.hidden = true;
-	emailContainer.appendChild(closeImage);
-	emailContainer.appendChild(exportImage);
-	document.body.appendChild(emailContainer);
-	exportImage.addEventListener('click', function(e){
-		exportImage.hidden = true;
-		closeImage.hidden = false;
-		emailContainer.className = 'expandEmailBox';
-		showEmailForm();
-		iso.layout();
-	});
-	closeImage.addEventListener('click', function(e){
-		exportImage.hidden = false;
-		closeImage.hidden = true;
-		emailContainer.className = 'email';
-		var name = document.querySelector('#nameInput');
-		var toEmail = document.querySelector('#toInput');
-		var fromEmail = document.querySelector('#emailInput');
-		var formDiv = document.querySelector('#emailForm');
-		formDiv.removeChild(name);
-		formDiv.removeChild(toEmail);
-		formDiv.removeChild(fromEmail);
-		iso.layout();
-	});
-}
-/*
-function sendData() {
-	var fs = require('fs');
-	var name = document.querySelector('#nameInput').value;
-	var toEmail = document.querySelector('#toInput').value;
-	var fromEmail = document.querySelector('#emailInput').value;
-	tableauDB.fetchIndexRecords(null, "sitestats", "table", function(stats) {
-		buildData(stats, function(datatoSend) {
-			fs.writeFile("data/stats.csv", datatoSend, function(err) {
-				if(err) {
-					alert("Error writing results");
-					//console.log(err);
-				} else {
-					var nodemailer = require('nodemailer');
-					var transporter = nodemailer.createTransport({
-						service: 'Mandrill',
-						auth: {
-							user: 'craig.bloodworth@theinformationlab.co.uk',
-							pass: 'M5LQxB9S9KB4iy0iEiDC0w'
-						}
-					});
-					transporter.sendMail({
-						from: name+' <'+fromEmail+'>',
-						to: toEmail,
-						subject: 'Tableau Server Stats Feedback',
-						text: 'Generated by The Information Lab',
-						attachments: [ {path: 'data/stats.csv'} ]
-					});
-				}
-			});
-		});
-	});
-}
-
-function buildData(stats, callback) {
-	var datatoSend = "Site Name,Object,Count\r\n";
-	for(var i=0, stat; stat = stats[i]; i++) {
-		datatoSend = datatoSend + stat.friendlyName + "," + stat.table + "," + stat.count + "\r\n";
-	}
-	callback(datatoSend);
-}
-*/
 function loadNavBar () {
 	var navbar = document.createElement("nav");
 	navbar.setAttribute('class','navbar navbar-default navbar-fixed-top');
@@ -998,6 +1122,15 @@ function loadNavBar () {
 	exportFilea.innerHTML = "<i class='fa fa-table'></i> Analyse in Tableau";
 	exportFile.appendChild(exportFilea);
 	menuList.appendChild(exportFile);
+	var restartApp = document.createElement('li');
+	var restartAppa = document.createElement('a');
+	restartAppa.innerHTML = "<i class='fa fa-times'></i> Restart App";
+	restartApp.appendChild(restartAppa);
+	menuList.appendChild(restartApp);
+	restartApp.addEventListener('click', function(e) {
+		var win = nw.Window.get();
+		win.reload();
+	});
 	nanoContent.appendChild(menuList);
 	nanoDiv.appendChild(nanoContent);
 	yaybarDiv.appendChild(nanoDiv);
@@ -1172,4 +1305,8 @@ function loadWDCModal() {
 	modalDialog.appendChild(modalContent);
 	modalDiv.appendChild(modalDialog);
 	document.body.appendChild(modalDiv);
+}
+
+function testParent(msg) {
+  console.log(msg);
 }

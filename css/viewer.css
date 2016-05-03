@@ -1,0 +1,66 @@
+body{
+	background-color: #FAFAFA;
+	font-family: 'Droid Sans', sans-serif;
+}
+
+#menu {
+  z-index: 999;
+  position: fixed;
+  top: 20px;
+  right: 21px;
+  padding: 5px 8px;
+  background-color: rgba(255,255,255,0.5);
+  color: #666;
+  border-radius: 5px;
+  font-size: 20px;
+  width: 33px;
+  height: 30px;
+	max-height: 96%;
+	overflow-y: scroll;
+}
+
+.menuBtn {
+  position: absolute;
+  right: 8px;
+}
+
+#menuContents {
+  display: none;
+  font-size: 14px;
+  padding-top: 25px;
+}
+
+.panel .panel-heading {
+	padding: 3px 15px;
+}
+
+.panel .panel-heading .panel-title{
+	font-size: 14px;
+}
+
+.panel .panel-heading .panel-title .fa{
+	padding-right: 5px;
+}
+.panel .panel-collapse .panel-body .field {
+	line-height: 1;
+}
+.panel .panel-collapse .panel-body .field label {
+	padding-right: 5px;
+  font-size: 12px;
+  width: 100px;
+  text-align: right;
+}
+
+.panel .panel-collapse .panel-body .field .edit {
+	display: none;
+	font-size: 12px;
+}
+.panel .panel-collapse .panel-body .field .view{
+	display: inline-block;
+	font-size: 12px;
+	width: 130px;
+}
+
+.snapshotImg {
+	height: 100vh;
+}
