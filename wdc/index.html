@@ -21,104 +21,94 @@
 		<script src="js/jquery-1.11.1.min.js" type="text/javascript"></script>
 		<link rel="stylesheet" href="css/yupana-main.css">
 
-	<script src="scripts/tableauwdc-1.1.0.js" type="text/javascript"></script>
-	<script src="scripts/db.js" type="text/javascript"></script>
+	<script src="js/tableauwdc-1.1.1.js" type="text/javascript"></script>
+	<script src="bin/db.js" type="text/javascript"></script>
 
 	<script type="text/javascript">
+	(function() {
 
-	function getMonday(d) {
-	  d = new Date(d);
-	  var day = d.getDay(),
-	      diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
-	  return new Date(d.setDate(diff));
-	}
-
-	var myConnector = tableau.makeConnector();
-
-	myConnector.init = function() {
-		console.log("Tableau Connection Init");
-			$('.noTableau').hide();
-			$('.welcome').show();
-			tableau.initCallback();
-	};
-
-	myConnector.getColumnHeaders = function() {
-		if (tableau.connectionData == "viewMonthly") {
-			var headerNames = ['View ID','Name','Path','Thumbnail URL','Updated At','Favorites Count','Hits Last One Month','Hits Last Three Months','Hits Last Twelve Months','Hits Total','Created At','Edit URL','Favorite','Owner Name','Owner Domain','Owner Username','Owner Server Admin','Project Name','Tags','Workbook ID','Workbook Name','Workbook Sheet Count','Site Name','Site Luid','Site ID'];
-			var headerTypes = ['string','string','string','string','datetime','int','int','int','int','int','datetime','string','boolean','string','string','string','string','string','string','string','string','int','string','string','string'];
-		} else if (tableau.connectionData == "viewWeekly") {
-			var headerNames = ['View ID','Name','Path','Thumbnail URL','Updated At','Created At','Edit URL','Favorite','Owner Name','Owner Domain','Owner Username','Owner Server Admin','Project Name','Tags','Workbook ID','Workbook Name','Workbook Sheet Count','Site Name','Site Luid','Weekly Hits Start','Weekly Hits'];
-			var headerTypes = ['string','string','string','string','datetime','datetime','string','boolean','string','string','string','string','string','string','string','string','int','string','string','date','int'];
-		} else if (tableau.connectionData == "users") {
-			var headerNames = ['Name','Domain','Last Signed In','Max Site Role','Site Count','Username','ID'];
-			var headerTypes = ['string','string','datetime','string','string','string','string'];
-		} else if (tableau.connectionData == "embeddatasources") {
-			var headerNames = ['Connected Workbooks','Database Username','Embededded Password','Server Name','Connection Class','Connection OAuth','Connection Type','Connection Type Display Name','Connection Type Editable','Download URL','Has Alert','Has Extract','ID','Last Refreshed','Name','Owner ID','Project ID','Repository URL','Site ID','Updated At','Workbook ID'];
-			var headerTypes = ['int','string','boolean','string','string','boolean','string','string','boolean','string','boolean','boolean','string','datetime','string','string','string','string','string','datetime','string'];
+		function getMonday(d) {
+		  d = new Date(d);
+		  var day = d.getDay(),
+		      diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
+		  return new Date(d.setDate(diff));
 		}
-		tableau.headersCallback(headerNames,headerTypes);
-	};
 
-	myConnector.getTableData = function() {
-		if (tableau.connectionData == "viewMonthly" || tableau.connectionData == "viewWeekly" ) {
-			var settings = {
-			  "async": true,
-			  "crossDomain": true,
-			  "url": "http://localhost:8000/views",
-			  "method": "GET"
+		var hasAuth = false;
+
+		var myConnector = tableau.makeConnector();
+
+		myConnector.init = function() {
+
+			if (tableau.phase == tableau.phaseEnum.interactivePhase ||
+                         tableau.phase == tableau.phaseEnum.authPhase) {
+				console.log("Tableau WDC Detected");
+				if (tableau.phase == tableau.phaseEnum.authPhase) {
+					hasAuth = true;
+          // Auto-submit here if we are in the auth phase
+					console.log("Entering Auth Phase");
+          tableau.submit()
+				} else if (tableau.connectionData) {
+					myConnector.setConnection(tableau.connectionData);
+					hasAuth = true;
+					if (tableau.phase == tableau.phaseEnum.authPhase) {
+						console.log("Entering Auth Phase");
+            // Auto-submit here if we are in the auth phase
+            tableau.submit()
+          }
+				}
 			}
 
-			$.ajax(settings).done(function (response) {
-				views = JSON.parse(response);
-			  var dataset = [];
-				for (var i=0; i<views.length;i++) {
-					var v = views[i];
-					if (tableau.connectionData == "viewMonthly") {
-						var entry = {};
-						entry["View ID"] = v.id;
-						entry["Name"] = v.name;
-						entry["Path"] = v.path;
-						entry["Thumbnail URL"] = v.thumbnailUrl;
-						if(v.updatedAt) {
-							var updateDate = v.updatedAt;
-							updateDate = updateDate.replace('T',' ');
-							updateDate = updateDate.substring(0,19);
-							entry["Updated At"] = updateDate;
-						}
-						if(v.usageInfo) {
-							entry["Favorites Count"] = v.usageInfo.favoritesTotal;
-							entry["Hits Last One Month"] = v.usageInfo.hitsLastOneMonthTotal;
-							entry["Hits Last Three Months"] = v.usageInfo.hitsLastThreeMonthsTotal;
-							entry["Hits Last Twelve Months"] = v.usageInfo.hitsLastTwelveMonthsTotal;
-							entry["Hits Total"] = v.usageInfo.hitsTotal;
-						}
-						if (v.createdAt) {
-							var createdAt = v.createdAt;
-							createdAt = updateDate.replace('T',' ');
-							createdAt = updateDate.substring(0,19);
-							entry["Created At"] = createdAt;
-						}
-						entry["Edit URL"] = v.editUrl;
-						entry["Favorite"] = v.favorite;
-						entry["Owner Name"] = v.owner.displayName;
-						entry["Owner Domain"] = v.owner.domainName;
-						entry["Owner Username"] = v.owner.username;
-						entry["Owner Server Admin"] = v.owner.serverAdmin;
-						entry["Project Name"] = v.project.name;
-						entry["Tags"] = JSON.stringify(v.tags);
-						entry["Workbook ID"] = v.workbook.id;
-						entry["Workbook Name"] = v.workbook.name;
-						entry["Workbook Sheet Count"] = v.workbook.sheetCount;
-						entry["Site Name"] = v.siteName;
-						entry["Site Luid"] = v.siteLuid;
-						entry["Site ID"] = v.siteID;
-						dataset.push(entry);
-					} else if (tableau.connectionData == "viewWeekly") {
-						var weeklyStats = v.hitsTimeSeries;
-						weeklyStats = weeklyStats.reverse();
-						for (var j = 0; j < weeklyStats.length; j++) {
+			if (tableau.phase == tableau.phaseEnum.interactivePhase) {
+				console.log("Entering Interactive Phase");
+				console.log(hasAuth);
+				if (!hasAuth) {
+					$('.noTableau').hide();
+					$('.welcome').show();
+					$('#submit').bind('click', function(){
+						$('.ajax-loading').show();
+						var selectedData = $('#selData').val();
+						myConnector.setConnection(selectedData);
+						tableau.submit();
+					});
+				}
+    	}
+			tableau.initCallback();
+		};
+
+		myConnector.getColumnHeaders = function() {
+			if (tableau.connectionData == "viewMonthly") {
+				var headerNames = ['View ID','Name','Path','Thumbnail URL','Updated At','Favorites Count','Hits Last One Month','Hits Last Three Months','Hits Last Twelve Months','Hits Total','Created At','Edit URL','Favorite','Owner Name','Owner Domain','Owner Username','Owner Server Admin','Project Name','Tags','Workbook ID','Workbook Name','Workbook Sheet Count','Site Name','Site Luid','Site ID'];
+				var headerTypes = ['string','string','string','string','datetime','int','int','int','int','int','datetime','string','boolean','string','string','string','string','string','string','string','string','int','string','string','string'];
+			} else if (tableau.connectionData == "viewWeekly") {
+				var headerNames = ['View ID','Name','Path','Thumbnail URL','Updated At','Created At','Edit URL','Favorite','Owner Name','Owner Domain','Owner Username','Owner Server Admin','Project Name','Tags','Workbook ID','Workbook Name','Workbook Sheet Count','Site Name','Site Luid','Weekly Hits Start','Weekly Hits'];
+				var headerTypes = ['string','string','string','string','datetime','datetime','string','boolean','string','string','string','string','string','string','string','string','int','string','string','date','int'];
+			} else if (tableau.connectionData == "users") {
+				var headerNames = ['Name','Domain','Last Signed In','Max Site Role','Site Count','Username','ID'];
+				var headerTypes = ['string','string','datetime','string','string','string','string'];
+			} else if (tableau.connectionData == "embeddatasources") {
+				var headerNames = ['Connected Workbooks','Database Username','Embededded Password','Server Name','Connection Class','Connection OAuth','Connection Type','Connection Type Display Name','Connection Type Editable','Download URL','Has Alert','Has Extract','ID','Last Refreshed','Name','Owner ID','Project ID','Repository URL','Site ID','Updated At','Workbook ID'];
+				var headerTypes = ['int','string','boolean','string','string','boolean','string','string','boolean','string','boolean','boolean','string','datetime','string','string','string','string','string','datetime','string'];
+			}
+			tableau.headersCallback(headerNames,headerTypes);
+		};
+
+		myConnector.getTableData = function() {
+			if (tableau.connectionData == "viewMonthly" || tableau.connectionData == "viewWeekly" ) {
+				var settings = {
+				  "async": true,
+				  "crossDomain": true,
+				  "url": "http://localhost:8000/views",
+				  "method": "GET"
+				}
+
+				$.ajax(settings).done(function (response) {
+					views = JSON.parse(response);
+				  var dataset = [];
+					for (var i=0; i<views.length;i++) {
+						var v = views[i];
+						if (tableau.connectionData == "viewMonthly") {
 							var entry = {};
-							var thisWeek = getMonday(new Date());
 							entry["View ID"] = v.id;
 							entry["Name"] = v.name;
 							entry["Path"] = v.path;
@@ -128,6 +118,13 @@
 								updateDate = updateDate.replace('T',' ');
 								updateDate = updateDate.substring(0,19);
 								entry["Updated At"] = updateDate;
+							}
+							if(v.usageInfo) {
+								entry["Favorites Count"] = v.usageInfo.favoritesTotal;
+								entry["Hits Last One Month"] = v.usageInfo.hitsLastOneMonthTotal;
+								entry["Hits Last Three Months"] = v.usageInfo.hitsLastThreeMonthsTotal;
+								entry["Hits Last Twelve Months"] = v.usageInfo.hitsLastTwelveMonthsTotal;
+								entry["Hits Total"] = v.usageInfo.hitsTotal;
 							}
 							if (v.createdAt) {
 								var createdAt = v.createdAt;
@@ -148,122 +145,150 @@
 							entry["Workbook Sheet Count"] = v.workbook.sheetCount;
 							entry["Site Name"] = v.siteName;
 							entry["Site Luid"] = v.siteLuid;
-							var weekStart = thisWeek.setDate(thisWeek.getDate()-(7*j));
-							var weekDate = new Date(weekStart);
-							var weekStartStr = weekDate.toISOString();
-							weekStartStr = weekStartStr.substring(0,10);
-							entry["Weekly Hits Start"] = weekStartStr;
-							entry["Weekly Hits"] = weeklyStats[j];
+							entry["Site ID"] = v.siteID;
 							dataset.push(entry);
+						} else if (tableau.connectionData == "viewWeekly") {
+							var weeklyStats = v.hitsTimeSeries;
+							weeklyStats = weeklyStats.reverse();
+							for (var j = 0; j < weeklyStats.length; j++) {
+								var entry = {};
+								var thisWeek = getMonday(new Date());
+								entry["View ID"] = v.id;
+								entry["Name"] = v.name;
+								entry["Path"] = v.path;
+								entry["Thumbnail URL"] = v.thumbnailUrl;
+								if(v.updatedAt) {
+									var updateDate = v.updatedAt;
+									updateDate = updateDate.replace('T',' ');
+									updateDate = updateDate.substring(0,19);
+									entry["Updated At"] = updateDate;
+								}
+								if (v.createdAt) {
+									var createdAt = v.createdAt;
+									createdAt = updateDate.replace('T',' ');
+									createdAt = updateDate.substring(0,19);
+									entry["Created At"] = createdAt;
+								}
+								entry["Edit URL"] = v.editUrl;
+								entry["Favorite"] = v.favorite;
+								entry["Owner Name"] = v.owner.displayName;
+								entry["Owner Domain"] = v.owner.domainName;
+								entry["Owner Username"] = v.owner.username;
+								entry["Owner Server Admin"] = v.owner.serverAdmin;
+								entry["Project Name"] = v.project.name;
+								entry["Tags"] = JSON.stringify(v.tags);
+								entry["Workbook ID"] = v.workbook.id;
+								entry["Workbook Name"] = v.workbook.name;
+								entry["Workbook Sheet Count"] = v.workbook.sheetCount;
+								entry["Site Name"] = v.siteName;
+								entry["Site Luid"] = v.siteLuid;
+								var weekStart = thisWeek.setDate(thisWeek.getDate()-(7*j));
+								var weekDate = new Date(weekStart);
+								var weekStartStr = weekDate.toISOString();
+								weekStartStr = weekStartStr.substring(0,10);
+								entry["Weekly Hits Start"] = weekStartStr;
+								entry["Weekly Hits"] = weeklyStats[j];
+								dataset.push(entry);
+							}
 						}
 					}
+					tableau.dataCallback(dataset, dataset.length, false);
+				});
+			} else if (tableau.connectionData == "users" ) {
+				var settings = {
+				  "async": true,
+				  "crossDomain": true,
+				  "url": "http://localhost:8000/serverUsers",
+				  "method": "GET"
 				}
-				tableau.dataCallback(dataset, dataset.length, false);
-			});
-		} else if (tableau.connectionData == "users" ) {
-			var settings = {
-			  "async": true,
-			  "crossDomain": true,
-			  "url": "http://localhost:8000/serverUsers",
-			  "method": "GET"
+				$.ajax(settings).done(function (response) {
+					users = JSON.parse(response);
+				  var dataset = [];
+					for (var i=0; i<users.length;i++) {
+						var u = users[i];
+						var entry = {};
+						entry["Name"] = u.displayName;
+						entry["Domain"] = u.domainName;
+						if (u.lastSignIn) {
+							var signedIn = u.lastSignIn;
+							signedIn = signedIn.replace('T',' ');
+							signedIn = signedIn.substring(0,19);
+							entry["Last Signed In"] = signedIn;
+						}
+						entry["Max Site Role"] = u.maxSiteRole;
+						entry["Site Count"] = u.siteCount;
+						entry["Username"] = u.username;
+						entry["ID"] = u.id;
+						dataset.push(entry);
+					}
+					tableau.dataCallback(dataset, dataset.length, false);
+				});
+			} else if (tableau.connectionData == "embeddatasources" ) {
+				var settings = {
+				  "async": true,
+				  "crossDomain": true,
+				  "url": "http://localhost:8000/embeddatasources",
+				  "method": "GET"
+				}
+				$.ajax(settings).done(function (response) {
+					datasources = JSON.parse(response);
+					var dataset = [];
+					for (var i = 0; i < datasources.length; i++) {
+						var entry = {};
+						var ds = datasources[i];
+						entry['Connected Workbooks'] = ds.connectedWorkbookCount;
+						entry['Database Username'] = ds.connectionDetails.databaseUsername;
+						entry['Embededded Password'] = ds.connectionDetails.hasEmbeddedPassword;
+						entry['Server Name'] = ds.connectionDetails.serverName;
+						entry['Connection Class'] = ds.connectionDetails.type;
+						entry['Connection OAuth'] = ds.connectionOAuth;
+						entry['Connection Type'] = ds.connectionType;
+						entry['Connection Type Display Name'] = ds.connectionTypeDisplayName;
+						entry['Connection Type Editable'] = ds.connectionTypeEditable;
+						entry['Download URL'] = ds.downloadUrl;
+						entry['Has Alert'] = ds.hasAlert;
+						entry['Has Extract'] = ds.hasExtracts;
+						entry['ID'] = ds.id;
+						if (ds.lastRefreshedAt) {
+							var lastRefreshed = ds.lastRefreshedAt;
+							lastRefreshed = lastRefreshed.replace('T',' ');
+							lastRefreshed = lastRefreshed.substring(0,19);
+							entry['Last Refreshed'] = lastRefreshed;
+						}
+						entry['Name'] = ds.name;
+						entry['Owner ID'] = ds.ownerId;
+						entry['Project ID'] = ds.projectId;
+						entry['Repository URL'] = ds.repositoryUrl;
+						entry['Site ID'] = ds.siteID;
+						if (ds.updatedAt) {
+							var updatedAt = ds.updatedAt;
+							updatedAt = updatedAt.replace('T',' ');
+							updatedAt = updatedAt.substring(0,19);
+							entry['Updated At'] = updatedAt;
+						}
+						entry['Workbook ID'] = ds.workbookId;
+						dataset.push(entry);
+					}
+					tableau.dataCallback(dataset, dataset.length, false);
+				});
 			}
-			$.ajax(settings).done(function (response) {
-				users = JSON.parse(response);
-			  var dataset = [];
-				for (var i=0; i<users.length;i++) {
-					var u = users[i];
-					var entry = {};
-					entry["Name"] = u.displayName;
-					entry["Domain"] = u.domainName;
-					if (u.lastSignIn) {
-						var signedIn = u.lastSignIn;
-						signedIn = signedIn.replace('T',' ');
-						signedIn = signedIn.substring(0,19);
-						entry["Last Signed In"] = signedIn;
-					}
-					entry["Max Site Role"] = u.maxSiteRole;
-					entry["Site Count"] = u.siteCount;
-					entry["Username"] = u.username;
-					entry["ID"] = u.id;
-					dataset.push(entry);
-				}
-				tableau.dataCallback(dataset, dataset.length, false);
-			});
-		} else if (tableau.connectionData == "embeddatasources" ) {
-			var settings = {
-			  "async": true,
-			  "crossDomain": true,
-			  "url": "http://localhost:8000/embeddatasources",
-			  "method": "GET"
+		};
+
+		myConnector.setConnection = function(type){
+			tableau.connectionData = type;
+			if (type == "viewMonthly") {
+				tableau.connectionName = "Tableau Server Stats";
+			} else if (type == "viewWeekly") {
+				tableau.connectionName = "Last 12 Weeks Tableau Server Stats";
+			} else if (type == "users") {
+				tableau.connectionName = "Tableau Server Users";
+			} else if (type == "embeddatasources") {
+				tableau.connectionName = "Tableau Server Embedded Data Sources";
 			}
-			$.ajax(settings).done(function (response) {
-				datasources = JSON.parse(response);
-				var dataset = [];
-				for (var i = 0; i < datasources.length; i++) {
-					var entry = {};
-					var ds = datasources[i];
-					entry['Connected Workbooks'] = ds.connectedWorkbookCount;
-					entry['Database Username'] = ds.connectionDetails.databaseUsername;
-					entry['Embededded Password'] = ds.connectionDetails.hasEmbeddedPassword;
-					entry['Server Name'] = ds.connectionDetails.serverName;
-					entry['Connection Class'] = ds.connectionDetails.type;
-					entry['Connection OAuth'] = ds.connectionOAuth;
-					entry['Connection Type'] = ds.connectionType;
-					entry['Connection Type Display Name'] = ds.connectionTypeDisplayName;
-					entry['Connection Type Editable'] = ds.connectionTypeEditable;
-					entry['Download URL'] = ds.downloadUrl;
-					entry['Has Alert'] = ds.hasAlert;
-					entry['Has Extract'] = ds.hasExtracts;
-					entry['ID'] = ds.id;
-					if (ds.lastRefreshedAt) {
-						var lastRefreshed = ds.lastRefreshedAt;
-						lastRefreshed = lastRefreshed.replace('T',' ');
-						lastRefreshed = lastRefreshed.substring(0,19);
-						entry['Last Refreshed'] = lastRefreshed;
-					}
-					entry['Name'] = ds.name;
-					entry['Owner ID'] = ds.ownerId;
-					entry['Project ID'] = ds.projectId;
-					entry['Repository URL'] = ds.repositoryUrl;
-					entry['Site ID'] = ds.siteID;
-					if (ds.updatedAt) {
-						var updatedAt = ds.updatedAt;
-						updatedAt = updatedAt.replace('T',' ');
-						updatedAt = updatedAt.substring(0,19);
-						entry['Updated At'] = updatedAt;
-					}
-					entry['Workbook ID'] = ds.workbookId;
-					dataset.push(entry);
-				}
-				tableau.dataCallback(dataset, dataset.length, false);
-			});
 		}
-	};
 
-	myConnector.setConnection = function(type){
-		tableau.connectionData = type;
-		if (type == "viewMonthly") {
-			tableau.connectionName = "Tableau Server Stats";
-		} else if (type == "viewWeekly") {
-			tableau.connectionName = "Last 12 Weeks Tableau Server Stats";
-		} else if (type == "users") {
-			tableau.connectionName = "Tableau Server Users";
-		} else if (type == "embeddatasources") {
-			tableau.connectionName = "Tableau Server Embedded Data Sources";
-		}
-	}
-
-	tableau.registerConnector(myConnector);
-
-	$(document).ready(function() {
-			$('.welcome').hide();
-			$('#submit').bind('click', function(){
-				$('.ajax-loading').show();
-				var selectedData = $('#selData').val();
-				myConnector.setConnection(selectedData);
-				tableau.submit();
-			});
-		});
+		tableau.registerConnector(myConnector);
+	})();
 	</script>
 </head>
 <body class="yay-hide">

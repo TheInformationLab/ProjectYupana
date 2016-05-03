@@ -43,6 +43,11 @@ div.ajax-loading {
 	color: red;
 	font-size: 12px;
 }
+
+.welcome {
+	display: none;
+}
+
 #loadingMsg {
 	position: absolute;
 	text-align: center;
