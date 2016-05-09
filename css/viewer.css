@@ -16,12 +16,13 @@ body{
   width: 33px;
   height: 30px;
 	max-height: 96%;
-	overflow-y: scroll;
+	overflow-y: auto;
 }
 
 .menuBtn {
   position: absolute;
   right: 8px;
+	overflow-y: none;
 }
 
 #menuContents {
